@@ -260,18 +260,22 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
     sb.auth.onAuthStateChange(function(ev,session){if(ev==='SIGNED_OUT'){location.reload()}});
     $('authForm').addEventListener('submit',function(e){
       e.preventDefault();msg('');
+      msg('Einen Moment …',true);
       sb.auth.signInWithPassword({email:$('a-mail').value.trim(),password:$('a-pw').value}).then(function(r){
-        if(r.error){msg(r.error.message==='Invalid login credentials'?'E-Mail oder Passwort stimmt nicht.':r.error.message);return}
+        if(r.error){msg(r.error.message==='Invalid login credentials'?'E-Mail oder Passwort stimmt nicht.':(r.error.message==='Email not confirmed'?'Bitte bestätige zuerst die E-Mail, die wir dir geschickt haben.':r.error.message));return}
         enter(r.data.session);
-      });
+      }).catch(function(e){msg('Das hat nicht geklappt: '+((e&&e.message)||e))});
     });
     $('a-up').addEventListener('click',function(){
       msg('');var mail=$('a-mail').value.trim(),pw=$('a-pw').value;
       if(!mail||pw.length<8){msg('Bitte E-Mail und ein Passwort mit mindestens 8 Zeichen eintragen.');return}
+      msg('Einen Moment …',true);
       sb.auth.signUp({email:mail,password:pw}).then(function(r){
         if(r.error){msg(r.error.message);return}
-        if(r.data.session){enter(r.data.session)}else{msg('Fast fertig. Bestätige die E-Mail, die wir dir geschickt haben, und melde dich dann an.',true)}
-      });
+        if(r.data.session){enter(r.data.session)}
+        else if(r.data.user&&r.data.user.identities&&!r.data.user.identities.length){msg('Zu dieser E-Mail gibt es schon ein Konto. Tippe auf Anmelden.')}
+        else{msg('Fast fertig. Bestätige die E-Mail, die wir dir geschickt haben, und melde dich dann an.',true)}
+      }).catch(function(e){msg('Das hat nicht geklappt: '+((e&&e.message)||e))});
     });
     $('btnOut').addEventListener('click',function(){sb.auth.signOut()});
     $('btnExport').addEventListener('click',function(){
