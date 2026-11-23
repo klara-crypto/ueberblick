@@ -171,6 +171,8 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 .auth h1{margin:0 0 4px}
 .auth .msg{min-height:20px;font-size:14px;color:var(--late)}
 .auth .msg.ok{color:var(--muted)}
+.auth input{color:var(--ink);-webkit-text-fill-color:var(--ink);background:var(--surface);border:1px solid var(--muted);min-height:48px}
+.auth input::placeholder{color:var(--muted);-webkit-text-fill-color:var(--muted);opacity:.8}
 .foot{margin:34px 0 0;display:flex;flex-wrap:wrap;gap:8px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
@@ -210,8 +212,8 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 <input type="file" id="csv" accept=".csv,.txt,text/csv,text/plain" hidden>
 <div class="auth" id="auth"><form id="authForm" autocomplete="on">
   <div class="eyebrow">Klaras Überblick</div><h1>Anmelden</h1>
-  <div class="field"><label for="a-mail">E-Mail</label><input id="a-mail" type="email" autocomplete="email" required></div>
-  <div class="field"><label for="a-pw">Passwort</label><input id="a-pw" type="password" autocomplete="current-password" minlength="8" required></div>
+  <div class="field"><label for="a-mail">E-Mail</label><input id="a-mail" type="email" autocomplete="email" placeholder="deine@mail.de" required></div>
+  <div class="field"><label for="a-pw">Passwort</label><input id="a-pw" type="password" autocomplete="current-password" placeholder="mindestens 8 Zeichen" minlength="8" required></div>
   <div class="msg" id="a-msg" role="alert"></div>
   <button class="btn primary" type="submit" id="a-in">Anmelden</button>
   <button class="btn" type="button" id="a-up">Konto erstellen</button>
