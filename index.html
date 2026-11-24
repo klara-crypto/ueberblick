@@ -111,6 +111,15 @@ summary{cursor:pointer;color:var(--muted);font-weight:500;padding:4px 0}
 .stay .in{font-size:12px;font-weight:500;color:var(--ink);border:1px solid var(--line);padding:2px 10px;border-radius:999px}
 a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 /* Eingabe */
+.files{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.file{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 12px}
+.file .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;background:none;border:0;text-align:left;color:var(--ink);font-weight:400;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.file small{color:var(--muted);font-size:12px;flex:none}
+.file .x{flex:none;background:none;border:0;color:var(--muted);font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
+.rev{border:1px solid var(--line);border-radius:18px;padding:12px 14px;margin:6px 0 12px;background:color-mix(in srgb,var(--c-content) 14%,var(--surface))}
+.rev b{display:block;font-weight:500;margin-bottom:4px}
+.rev p{margin:4px 0 8px;font-size:14px;color:var(--muted)}
+.pill-rev{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:999px;background:var(--c-content);color:var(--bg)}
 .fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:20;width:58px;height:58px;border-radius:50%;border:0;background:var(--accent);color:#fff;font:300 34px/1 var(--font);display:flex;align-items:center;justify-content:center;padding:0 0 4px}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:10;pointer-events:none}
 .dock>*{pointer-events:auto}
@@ -245,6 +254,12 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
       return function(){stop=true;clearInterval(t)};
     }
   }}};
+  adapter.storage={
+    up:function(path,file){return sb.storage.from('uploads').upload(path,file,{upsert:false,contentType:file.type||'application/octet-stream'}).then(function(r){if(r.error)throw r.error;return r})},
+    rm:function(path){return sb.storage.from('uploads').remove([path]).then(function(r){if(r.error)throw r.error})},
+    url:function(path){return sb.storage.from('uploads').createSignedUrl(path,3600).then(function(r){if(r.error)throw r.error;return r.data.signedUrl})},
+    uid:function(){return uid}
+  };
   window.claude={use:function(n){return n==='db'?gate.then(function(){return adapter}):Promise.resolve(null)}};
   document.addEventListener('visibilitychange',function(){if(!document.hidden)Object.keys(pulls).forEach(pull)});
   function enter(session){uid=session.user.id;$('auth').classList.remove('on');openGate()}
@@ -413,6 +428,10 @@ function rowHTML(t,o){
   if(t.repeat&&t.repeat!=='none'&&t.kind!=='date')meta.push('↻ '+({daily:'täglich',monthly:'monatlich',yearly:'jährlich'}[t.repeat]||''));
   if(t.doing&&!t.done)meta.unshift('<span class="pill-doing">▶ In Arbeit</span>');
   if(!t.done&&blocked(t))meta.push('<span>⏳ wartet auf '+esc(waitNames(t))+'</span>');
+  if(t.review==='pending'&&!t.done)meta.unshift('<span class="pill-rev">👀 Bei Ina</span>');
+  if(t.review==='redo'&&!t.done)meta.unshift('<span class="pill-rev" style="background:var(--late)">↩ Überarbeiten</span>');
+  if(t.review==='ok')meta.push('<span>✓ abgelegt</span>');
+  if(t.files&&t.files.length)meta.push('📎 '+t.files.length);
   if(t.note)meta.push('📝');
   if(t.focus)meta.push('★');
   var left=t.kind==='date'&&d?'<span class="badge" style="--c:var(--c-'+c.id+')"><b>'+parse(d).getDate()+'</b>'+MON[parse(d).getMonth()]+'</span>'
@@ -454,7 +473,7 @@ function viewAll(){
     var c=CAT[catSel],mine=all.filter(function(t){return t.cat===catSel&&t.kind!=='idea'});
     var open=mine.filter(function(t){return !t.done}).sort(sortFn),done=mine.filter(function(t){return t.done});
     var ideas=all.filter(function(t){return t.cat===catSel&&t.kind==='idea'&&!t.done});
-    var h='<button class="back" type="button" data-act="back">‹ Alle Bereiche</button><div class="cathead" style="--c:var(--c-'+c.id+')"><b>'+c.e+' '+esc(c.n)+'</b></div><p class="sum">'+esc(c.d)+'</p>';
+    var h='<button class="back" type="button" data-act="back">‹ Alle Bereiche</button><div class="cathead" style="--c:var(--c-'+c.id+')"><b>'+c.e+' '+esc(c.n)+'</b></div><p class="sum">'+esc(c.d)+'</p><button class="btn" type="button" data-act="new" data-id="'+c.id+'" style="margin:4px 0 8px">+ Aufgabe in '+esc(c.n)+'</button>';
     if(catSel==='geld'){var s=0;open.forEach(function(t){if(t.amount)s+=+t.amount});if(s)h+='<p class="sum"><b>Offene Beträge: '+eur(s)+'</b></p>'}
     h+=open.length?'<div class="list">'+open.map(function(t){return rowHTML(t,{hideCat:true})}).join('')+'</div>':'<div class="empty">Hier ist nichts offen.</div>';
     if(ideas.length)h+=section('💡 Ideen',ideas,{hideCat:true,promote:true});
@@ -622,6 +641,7 @@ function openSheet(id){
   var link=safeUrl(t.link),c=CAT[t.cat]||CAT.inbox;
   document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+c.e+' '+esc(t.title)+'</h3>'
    +'<div class="field"><label for="f-note">Notizen</label><textarea id="f-note" rows="7" placeholder="Hier ist Platz für Gedanken, Links, nächste Schritte …">'+esc(t.note||'')+'</textarea></div>'
+   +filesHTML(id,t)
    +(link?'<p class="note" style="margin:0 0 12px"><a href="'+esc(link)+'">Link öffnen</a></p>':'')
    +'<label class="check"><input type="checkbox" id="f-doing"'+(t.doing?' checked':'')+'> Ich arbeite gerade daran</label>'
    +'<label class="check"><input type="checkbox" id="f-focus"'+(t.focus?' checked':'')+'> Als Fokus für heute markieren</label>'
@@ -637,8 +657,8 @@ function openSheet(id){
   document.getElementById('scrim').classList.add('on');
 }
 
-function openNew(){
-  var po='<option value="">Automatisch</option>'+CATS.filter(function(c){return c.id!=='inbox'}).map(function(c){return '<option value="'+c.id+'">'+c.e+' '+esc(c.n)+'</option>'}).join('');
+function openNew(pre){
+  var po='<option value="">Automatisch</option>'+CATS.filter(function(c){return c.id!=='inbox'}).map(function(c){return '<option value="'+c.id+'"'+(pre===c.id?' selected':'')+'>'+c.e+' '+esc(c.n)+'</option>'}).join('');
   document.getElementById('sheet').innerHTML='<h3 id="shTitle">Neu</h3>'
    +'<div class="field"><label for="n-what">Was</label><input id="n-what" placeholder="z. B. Videos schneiden morgen" autocomplete="off"></div>'
    +'<div class="two"><div class="field"><label for="n-kind">Art</label><select id="n-kind"><option value="task">Aufgabe</option><option value="idea">Idee</option><option value="date">Termin</option></select></div><div class="field"><label for="n-cat">Bereich</label><select id="n-cat">'+po+'</select></div></div>'
@@ -658,6 +678,38 @@ function saveNew(){
   var id=uid();put(id,o);closeSheet();
   if(kind==='date'&&!o.due){toast('Termin gespeichert. Bitte noch ein Datum eintragen.',3200);setTimeout(function(){openSheet(id)},300)}
   else toast('In „'+CAT[o.cat].n+'“'+(o.due?' · '+rel(o.due):''),3000);
+}
+
+function fmtSize(n){n=+n||0;return n>=1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function filesHTML(id,t){
+  if(!store||!store.storage)return '';
+  var f=t.files||[],h='<div class="field"><label>Dateien</label><div class="files">';
+  f.forEach(function(x,i){h+='<div class="file"><button class="fn" type="button" data-act="fopen" data-id="'+id+'" data-i="'+i+'">'+esc(x.name)+'</button><small>'+fmtSize(x.size)+'</small><button class="x" type="button" data-act="fdel" data-id="'+id+'" data-i="'+i+'" aria-label="Datei entfernen">×</button></div>'});
+  h+='</div><input type="file" id="f-up" multiple hidden><button class="btn" type="button" data-act="fup">+ Datei hochladen</button></div>';
+  var r=t.review;
+  if(r==='pending')h+='<div class="rev"><b>👀 Bei Ina zur Kontrolle</b><p>Wartet auf Rückmeldung.</p><button class="btn" type="button" data-act="rvreset" data-id="'+id+'">Zurückholen</button></div>';
+  else if(r==='redo')h+='<div class="rev"><b>↩ Ina bittet um Überarbeitung</b>'+(t.reviewNote?'<p>'+esc(t.reviewNote)+'</p>':'')+'<button class="btn" type="button" data-act="rvsend" data-id="'+id+'">Nochmal zur Kontrolle</button></div>';
+  else if(r==='ok')h+='<div class="rev"><b>✓ Von Ina abgelegt</b>'+(t.reviewNote?'<p>'+esc(t.reviewNote)+'</p>':'')+'</div>';
+  else h+='<div class="rev"><b>Zur Kontrolle</b><p>Wenn du fertig bist, schick es an Ina.</p><button class="btn primary" type="button" data-act="rvsend" data-id="'+id+'">Zur Kontrolle an Ina schicken</button></div>';
+  return h;
+}
+function setReview(id,v){var t=items[id];if(!t)return;var n=Object.assign({},t);n.review=v;if(v==='pending'){n.reviewAt=new Date().toISOString();n.reviewNote=''}else n.reviewNote='';put(id,n);openSheet(id)}
+function uploadFiles(id,list){
+  var t=items[id];if(!t||!list.length)return;
+  var uidv=store.storage.uid(),done=0,fails=0,added=[];
+  toast('Lädt hoch …',60000);
+  var chainU=Promise.resolve();
+  Array.prototype.forEach.call(list,function(file){
+    chainU=chainU.then(function(){
+      var safe=file.name.replace(/[^A-Za-z0-9._-]+/g,'_'),path=uidv+'/'+id+'/'+Date.now().toString(36)+'-'+safe;
+      return store.storage.up(path,file).then(function(){added.push({path:path,name:file.name,size:file.size,type:file.type||''})},function(e){fails++;toast('Hochladen hat nicht geklappt: '+((e&&e.message)||'Fehler'),6000)});
+    });
+  });
+  chainU.then(function(){
+    if(added.length){var cur=items[id];if(cur){var n=Object.assign({},cur);n.files=(cur.files||[]).concat(added);put(id,n)}}
+    if(!fails)toast(added.length+(added.length===1?' Datei':' Dateien')+' hochgeladen.',2500);
+    openSheet(id);
+  });
 }
 function closeSheet(){document.getElementById('scrim').classList.remove('on')}
 function saveSheet(id){
@@ -689,7 +741,12 @@ document.addEventListener('click',function(e){
   else if(a==='promote'){var t=items[id];if(t){var n=Object.assign({},t);n.kind='task';put(id,n);toast('Jetzt als Aufgabe in „'+CAT[n.cat].n+'“')}}
   else if(a==='ai')sortWithClaude();
   else if(a==='save')saveSheet(id);
-  else if(a==='new')openNew();
+  else if(a==='new')openNew(id||'');
+  else if(a==='fup')document.getElementById('f-up').click();
+  else if(a==='fopen'){var tt=items[id],ff=tt&&tt.files&&tt.files[+el.dataset.i];if(ff)store.storage.url(ff.path).then(function(u){window.open(u,'_blank')},function(){toast('Die Datei lässt sich gerade nicht öffnen.')})}
+  else if(a==='fdel'){var t2=items[id],f2=t2&&t2.files&&t2.files[+el.dataset.i];if(f2&&confirm('„'+f2.name+'“ wirklich entfernen?')){store.storage.rm(f2.path).catch(function(){});var n2=Object.assign({},t2);n2.files=t2.files.filter(function(_,k){return k!==+el.dataset.i});put(id,n2);openSheet(id)}}
+  else if(a==='rvsend')setReview(id,'pending');
+  else if(a==='rvreset')setReview(id,'');
   else if(a==='nsave')saveNew();
   else if(a==='nwhen'){document.getElementById('n-when').value=addDays(TD,+id)}
   else if(a==='qwhen'){qc.when=addDays(TD,+id);render()}
@@ -710,6 +767,7 @@ document.addEventListener('click',function(e){
   else if(a==='del'){closeSheet();remove(id);toast('Gelöscht.')}
 });
 document.getElementById('sheet').addEventListener('change',function(e){
+  if(e.target.id==='f-up'){var sb2=document.querySelector('[data-act=save]');if(sb2&&e.target.files.length)uploadFiles(sb2.dataset.id,e.target.files);return}
   if(e.target.id!=='f-note')return;var b=document.querySelector('[data-act=save]');if(!b)return;var id=b.dataset.id,t=items[id];
   if(t){var n=Object.assign({},t);n.note=e.target.value.trim();put(id,n);toast('Notiz gespeichert',1200)}
 });
