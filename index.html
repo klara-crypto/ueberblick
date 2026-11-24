@@ -505,10 +505,42 @@ function viewIdeas(){
 }
 function fd(x){return parse(x).getDate()+'. '+MON[parse(x).getMonth()]}
 function stayTasks(sid){return list().filter(function(t){var x=stayOf(t);return x&&x.id===sid&&t.kind!=='idea'})}
+
+function saveStays(){
+  STAYS.sort(function(a,b){return a.s<b.s?-1:a.s>b.s?1:0});
+  render();
+  if(store){store.collection('meta').doc('stays').set({list:STAYS.map(function(x){return {id:x.id,n:x.n,f:x.f,s:x.s,e:x.e}})}).catch(function(){toast('Speichern hat nicht geklappt. Bitte noch einmal versuchen.')})}
+}
+function openStay(id){
+  var st=id?stayById(id):{id:'',n:'',f:'📍',s:TD,e:addDays(TD,7)};if(!st)return;
+  var flags=['📍','🇩🇪','🇪🇸','🇵🇹','🇫🇷','🇮🇹','🇬🇷','🇨🇭','🇦🇹','🇳🇱','🇬🇧','🇸🇪','🇯🇵','🇻🇳','🇲🇾','🇹🇭','🇮🇩','🇵🇭','🇺🇸','🇲🇽','🇲🇦','🇹🇷','🇦🇪','🇦🇺','🇳🇿'];
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+(id?'Station bearbeiten':'Neue Station')+'</h3>'
+   +'<div class="field"><label for="st-name">Ort</label><input id="st-name" placeholder="z. B. Lissabon" value="'+esc(st.n)+'"></div>'
+   +'<div class="field"><label for="st-flag">Flagge oder Symbol</label><input id="st-flag" list="st-flags" value="'+esc(st.f)+'"><datalist id="st-flags">'+flags.map(function(f){return '<option value="'+f+'">'}).join('')+'</datalist></div>'
+   +'<div class="two"><div class="field"><label for="st-s">Ankunft</label><input id="st-s" type="date" value="'+esc(st.s)+'"></div><div class="field"><label for="st-e">Abreise</label><input id="st-e" type="date" value="'+esc(st.e)+'"></div></div>'
+   +'<div class="acts"><button class="btn primary" type="button" data-act="stsave" data-id="'+(id||'')+'">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button>'+(id?'<button class="btn danger" type="button" data-act="stdel" data-id="'+id+'">Löschen</button>':'')+'</div>';
+  document.getElementById('scrim').classList.add('on');
+}
+function saveStay(id){
+  var n=document.getElementById('st-name').value.trim(),f=document.getElementById('st-flag').value.trim()||'📍',
+      a=document.getElementById('st-s').value,b=document.getElementById('st-e').value;
+  if(!n){toast('Bitte einen Ort eintragen.');return}
+  if(!a||!b){toast('Bitte Ankunft und Abreise eintragen.');return}
+  if(b<a){toast('Die Abreise liegt vor der Ankunft.');return}
+  if(id){var st=stayById(id);if(st){st.n=n;st.f=f;st.s=a;st.e=b}}
+  else{id='st'+uid();STAYS.push({id:id,n:n,f:f,s:a,e:b})}
+  closeSheet();saveStays();
+}
+function deleteStay(id){
+  var i;for(i=0;i<STAYS.length;i++){if(STAYS[i].id===id){STAYS.splice(i,1);break}}
+  if(stationSel===id)stationSel=null;
+  Object.keys(items).forEach(function(k){if(items[k].stay===id){var n=Object.assign({},items[k]);n.stay='';put(k,n)}});
+  closeSheet();saveStays();
+}
 function viewStation(){
   var st=stayById(stationSel),n=diff(st.s,st.e),all=stayTasks(st.id),open=all.filter(function(t){return !t.done}).sort(sortFn),done=all.filter(function(t){return t.done});
   var when=st.s<=TD&&TD<=st.e?'Tag '+Math.min(diff(st.s,TD)+1,Math.max(n,1))+' von '+Math.max(n,1):(st.s>TD?'in '+diff(TD,st.s)+' Tagen':'vorbei');
-  var h='<button class="back" type="button" data-act="stback">‹ Unterwegs</button>';
+  var h='<div class="two" style="align-items:center"><button class="back" type="button" data-act="stback">‹ Unterwegs</button><button class="btn" type="button" data-act="stedit" data-id="'+st.id+'" style="justify-self:end">Station bearbeiten</button></div>';
   h+='<div class="card" style="margin-top:12px"><div class="nowname">'+st.f+' '+esc(st.n)+'</div><p class="sum" style="margin:6px 0 0">'+fd(st.s)+' bis '+fd(st.e)+(n>0?' · '+n+' Nächte':'')+' · '+when+'</p></div>';
   h+=open.length?'<h2>Aufgaben hier<small>'+open.length+'</small></h2><div class="list">'+open.map(function(t){return rowHTML(t,{hideCat:t.cat==='reisen'})}).join('')+'</div>':'<h2>Aufgaben hier</h2><div class="empty">Hier ist nichts offen.</div>';
   if(done.length)h+='<details><summary>Erledigt ('+done.length+')</summary><div class="list" style="margin-top:8px">'+done.map(function(t){return rowHTML(t,{hideCat:t.cat==='reisen'})}).join('')+'</div></details>';
@@ -517,7 +549,7 @@ function viewStation(){
 }
 function viewTrip(){
   if(stationSel&&stayById(stationSel))return viewStation();
-  var cur=curStay(),nx=nextStays().slice(0,8),all=list();
+  var cur=curStay(),nx=nextStays(),all=list();
   var h='<h2>📍 Wo ich gerade bin</h2>';
   if(cur){var tot=Math.max(diff(cur.s,cur.e),1),oc=stayTasks(cur.id).filter(function(t){return !t.done}).length;
     h+='<button class="card nowcard" type="button" data-act="station" data-id="'+cur.id+'"><div class="nowname">'+cur.f+' '+esc(cur.n)+'</div><p class="sum" style="margin:6px 0 0">Tag '+Math.min(diff(cur.s,TD)+1,tot)+' von '+tot+', bis '+fd(cur.e)+' · '+oc+' offen · antippen für alle Aufgaben</p></button>'}
@@ -527,7 +559,8 @@ function viewTrip(){
     var n=diff(TD,s.s),nights=diff(s.s,s.e),oc=stayTasks(s.id).filter(function(t){return !t.done}).length;
     h+='<button class="stay" type="button" data-act="station" data-id="'+s.id+'"><span class="f">'+s.f+'</span><span><b>'+esc(s.n)+'</b><small>'+fd(s.s)+' bis '+fd(s.e)+(nights>0?' · '+nights+' Nächte':'')+(oc?' · '+oc+' offen':'')+'</small></span><span class="in">in '+n+' Tagen</span></button>';
   });
-  h+='</div><p class="note">Tippe auf eine Station, um ihre Aufgaben zu sehen. Flüge, Hotels und Kosten findest du im <a href="'+PLANNER_URL+'">Reiseplaner</a>.</p>';
+  if(!nx.length)h+='<p class="sum" style="margin:10px 0">Keine weiteren Stationen eingetragen.</p>';
+  h+='</div><button class="btn" type="button" data-act="stadd" style="margin-top:10px">+ Station hinzufügen</button><p class="note">Tippe auf eine Station, um ihre Aufgaben zu sehen. Flüge, Hotels und Kosten findest du im <a href="'+PLANNER_URL+'">Reiseplaner</a>.</p>';
   var loose=all.filter(function(t){return t.cat==='reisen'&&!t.done&&t.kind!=='idea'&&!stayOf(t)}).sort(sortFn);
   h+=section('🎫 Ohne Station',loose,{hideCat:true});
   return h;
@@ -633,6 +666,10 @@ document.addEventListener('click',function(e){
   else if(a==='cat'){catSel=id;render();window.scrollTo(0,0)}
   else if(a==='back'){catSel=null;render()}
   else if(a==='station'){stationSel=id;render();window.scrollTo(0,0)}
+  else if(a==='stadd')openStay('');
+  else if(a==='stedit')openStay(id);
+  else if(a==='stsave')saveStay(id);
+  else if(a==='stdel'){deleteStay(id);toast('Station gelöscht.')}
   else if(a==='stback'){stationSel=null;render();window.scrollTo(0,0)}
   else if(a==='promote'){var t=items[id];if(t){var n=Object.assign({},t);n.kind='task';put(id,n);toast('Jetzt als Aufgabe in „'+CAT[n.cat].n+'“')}}
   else if(a==='ai')sortWithClaude();
