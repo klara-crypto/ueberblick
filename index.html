@@ -119,7 +119,7 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 .compose input{flex:1;min-width:0;border:1px solid var(--ink);background:var(--surface);border-radius:999px;padding:11px 18px;font-size:16px;font-weight:300}
 .compose input:focus{border-color:var(--deep);outline:2px solid var(--deep);outline-offset:0}
 .compose button{flex:none;width:50px;border:0;background:var(--accent);color:#E7EDEF;border-radius:50%;font-weight:400;font-size:22px}
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);max-width:640px;margin:0 auto;padding:6px 10px 8px;background:var(--bg);pointer-events:auto}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);max-width:640px;margin:0 auto;padding:6px 10px 8px;background:var(--bg);pointer-events:auto}
 .tabs button{border:0;background:none;padding:6px 2px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
 .tabs .ic{font-size:20px;line-height:1.3}
 .tabs button[aria-selected="true"]{color:var(--on-deep);background:var(--deep)}
@@ -206,7 +206,6 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
     <button role="tab" type="button" data-tab="all" aria-selected="false"><span class="ic">🗂️</span>Projekte</button>
     <button role="tab" type="button" data-tab="ideas" aria-selected="false"><span class="ic">💡</span>Ideen<span class="cnt" id="inboxCnt" hidden></span></button>
     <button role="tab" type="button" data-tab="trip" aria-selected="false"><span class="ic">✈️</span>Reisen</button>
-    <button role="tab" type="button" data-tab="money" aria-selected="false"><span class="ic">💰</span>Geld</button>
   </nav>
 </div>
 <input type="file" id="csv" accept=".csv,.txt,text/csv,text/plain" hidden>
