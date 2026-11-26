@@ -599,7 +599,7 @@ function saveWish(id){
   wishSel=d.wl;put(id||uid(),o);closeSheet();toast('Gespeichert',1500);
 }
 var BMIN='2026-12',spendMonth=TD.slice(0,7)<BMIN?BMIN:TD.slice(0,7);
-var BC=[{id:'rent',e:'🏨',n:'Miete & Hotels',d:350},{id:'flug',e:'✈️',n:'Flüge',d:140},{id:'food',e:'🍽️',n:'Essen',d:140},{id:'fun',e:'🎉',n:'Spaß',d:70}];
+var BC=[{id:'rent',e:'🏨',n:'Miete & Hotels',d:350},{id:'flug',e:'🚆',n:'Transfer',d:140},{id:'food',e:'🍽️',n:'Essen',d:140},{id:'fun',e:'🎉',n:'Spaß',d:70}];
 var BI=[{id:'oma',e:'👵',n:'Oma',min:200,max:200},{id:'papa',e:'👨',n:'Papa',min:500,max:500},{id:'mcp',e:'💼',n:'MCP',min:0,max:0,bonus:1},{id:'side',e:'🌱',n:'Nebenprojekt',min:0,max:0,bonus:1}];
 function spends(){return Object.keys(items).filter(function(id){return items[id].kind==='spend'}).map(function(id){return Object.assign({id:id},items[id])})}
 function flugY(){var c=items['cfg-budget'];return c&&c.flugY!=null?+c.flugY:1680}
@@ -619,9 +619,9 @@ function viewBudget(){
     if(c.id==='flug'){
       var yr=spendMonth.slice(0,4),pot=flugY(),yu=0;
       if(+yr>=2027){spends().forEach(function(x){if(x.t!=='in'&&x.sc==='flug'&&(x.date||'').slice(0,4)===yr)yu+=+x.amount||0});
-        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>✈️ Flüge '+yr+' (ganzes Jahr)</span><span>'+eur(pot-yu)+' übrig</span></div>'+bar(yu,pot)+'<small style="color:var(--muted)">'+eur(yu)+' von '+eur(pot)+' im Jahr · entspricht '+eur(Math.round(pot/12))+' im Monat</small></div>'}
+        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>🚆 Transfer '+yr+' (ganzes Jahr)</span><span>'+eur(pot-yu)+' übrig</span></div>'+bar(yu,pot)+'<small style="color:var(--muted)">'+eur(yu)+' von '+eur(pot)+' im Jahr · entspricht '+eur(Math.round(pot/12))+' im Monat</small></div>'}
       else{var fu=0;flugM.forEach(function(x){fu+=+x.amount||0});
-        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="font-weight:500">✈️ Flüge</div><small style="color:var(--muted)">Das Jahresbudget von '+eur(pot)+' startet im Januar 2027.'+(fu?' In diesem Monat schon '+eur(fu)+' gebucht.':'')+'</small></div>'}
+        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="font-weight:500">🚆 Transfer</div><small style="color:var(--muted)">Flug, Bus und Bahn: Das Jahresbudget von '+eur(pot)+' startet im Januar 2027.'+(fu?' In diesem Monat schon '+eur(fu)+' gebucht.':'')+'</small></div>'}
       return}
     var u=0;outs.forEach(function(x){if((x.sc||'fun')===c.id)u+=+x.amount||0});var cap=bCfg(c.id);
     h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+' übrig</span></div>'+bar(u,cap)+'<small style="color:var(--muted)">'+eur(u)+' von '+eur(cap)+'</small></div>'});
