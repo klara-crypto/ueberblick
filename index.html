@@ -598,27 +598,43 @@ function saveWish(id){
   var o=id&&items[id]?Object.assign({},items[id],d):mk(Object.assign({kind:'wish',cat:'inbox',src:'app'},d));
   wishSel=d.wl;put(id||uid(),o);closeSheet();toast('Gespeichert',1500);
 }
-var spendMonth=TD.slice(0,7);
+var BMIN='2026-12',spendMonth=TD.slice(0,7)<BMIN?BMIN:TD.slice(0,7);
+var BC=[{id:'rent',e:'🏨',n:'Miete & Hotels',d:600},{id:'flug',e:'✈️',n:'Flüge',d:240},{id:'food',e:'🍽️',n:'Essen',d:240},{id:'fun',e:'🎉',n:'Spaß',d:120}];
+var BI=[{id:'oma',e:'👵',n:'Oma',min:200,max:200},{id:'papa',e:'👨',n:'Papa',min:500,max:500},{id:'mcp',e:'💼',n:'MCP',min:500,max:800},{id:'side',e:'🌱',n:'Nebenprojekt',min:0,max:3000}];
 function spends(){return Object.keys(items).filter(function(id){return items[id].kind==='spend'}).map(function(id){return Object.assign({id:id},items[id])})}
-function budgetAmt(){var c=items['cfg-budget'];return c&&+c.amount||0}
+function bCfg(id){var c=items['cfg-budget'],b=BC.filter(function(x){return x.id===id})[0];return c&&c[id]!=null?+c[id]:b.d}
+function bar(used,cap){var p=cap?Math.min(100,Math.round(used/cap*100)):0,over=used>cap;return '<div class="bbar" style="background:color-mix(in srgb,var(--ink) 12%,transparent);margin:8px 0 6px"><i style="width:'+p+'%;background:'+(over?'var(--late)':'var(--deep)')+'"></i></div>'}
 function viewBudget(){
-  var all=spends().filter(function(x){return (x.date||'').slice(0,7)===spendMonth}).sort(function(a,b){return (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0});
-  var sum=0;all.forEach(function(x){sum+=+x.amount||0});
-  var bud=budgetAmt(),left=bud-sum,pct=bud?Math.min(100,Math.round(sum/bud*100)):0,y=+spendMonth.slice(0,4),m=+spendMonth.slice(5,7)-1;
-  var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat">‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
-  if(!bud)h+='<div class="bcard"><div class="lbl">Monatsbudget</div><div class="big">Noch keins</div><p class="bsub" style="margin-top:12px">Lege fest, wie viel du pro Monat ausgeben möchtest.</p><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep)" type="button" data-act="bset">Budget festlegen</button></div></div>';
-  else h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig')+'</div><div class="big">'+eur(Math.abs(left))+'</div><div class="bbar"><i style="width:'+pct+'%"></i></div><div class="bsub"><span>Ausgegeben '+eur(sum)+'</span><span>von '+eur(bud)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Budget ändern</button></div></div>';
-  h+='<div class="acts" style="margin:0 0 14px"><button class="btn primary" type="button" data-act="new">+ Ausgabe</button></div>';
-  if(!all.length)h+='<div class="empty">Noch keine Ausgaben in diesem Monat. Tippe auf + und trage ein, was du gekauft hast. Ein Screenshot geht auch.</div>';
-  all.forEach(function(x){h+='<div class="wrow"><button class="wt" type="button" data-act="spedit" data-id="'+x.id+'">'+esc(x.title||'Ausgabe')+'<small>'+(x.date?fd(x.date):'')+(x.files&&x.files.length?' · 📎 '+x.files.length:'')+(x.note?' · '+esc(x.note):'')+'</small></button><b style="padding:0 12px;white-space:nowrap">'+eur(+x.amount||0)+'</b></div>'});
+  var mm=spends().filter(function(x){return (x.date||'').slice(0,7)===spendMonth}).sort(function(a,b){return (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0});
+  var outs=mm.filter(function(x){return x.t!=='in'}),ins=mm.filter(function(x){return x.t==='in'});
+  var sumOut=0,tot=0,got=0,safe=0,hi=0;outs.forEach(function(x){sumOut+=+x.amount||0});ins.forEach(function(x){got+=+x.amount||0});
+  BC.forEach(function(c){tot+=bCfg(c.id)});BI.forEach(function(i){safe+=i.min;hi+=i.max});
+  var left=tot-sumOut,y=+spendMonth.slice(0,4),m=+spendMonth.slice(5,7)-1;
+  var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat"'+(spendMonth<=BMIN?' disabled style="opacity:.3"':'')+'>‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
+  h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig im Monat')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>Ausgegeben '+eur(sumOut)+'</span><span>von '+eur(tot)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Budgets ändern</button></div></div>';
+  h+='<div class="acts" style="margin:0 0 6px"><button class="btn primary" type="button" data-act="new">+ Eintrag</button></div>';
+  h+='<h2>Bereiche</h2>';
+  BC.forEach(function(c){var u=0;outs.forEach(function(x){if((x.sc||'fun')===c.id)u+=+x.amount||0});var cap=bCfg(c.id);
+    h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+' übrig</span></div>'+bar(u,cap)+'<small style="color:var(--muted)">'+eur(u)+' von '+eur(cap)+'</small></div>'});
+  h+='<h2>Einnahmen</h2>';
+  BI.forEach(function(i){var r=0;ins.forEach(function(x){if(x.sc===i.id)r+=+x.amount||0});
+    h+='<div class="wrow" style="display:flex;justify-content:space-between;padding:12px 16px"><span>'+i.e+' '+i.n+'<br><small style="color:var(--muted)">'+(i.min===i.max?eur(i.min):eur(i.min)+' bis '+eur(i.max))+' erwartet</small></span><b>'+eur(r)+'</b></div>'});
+  h+='<p class="note">Sicher eingeplant: '+eur(safe)+' im Monat. Erhalten: '+eur(got)+'. Das Nebenprojekt zählt nicht in die Budgets, solange es schwankt.</p>';
+  h+='<h2>Verlauf<small>'+mm.length+'</small></h2>';
+  if(!mm.length)h+='<div class="empty">Noch nichts eingetragen. Tippe auf + Eintrag. Ein Screenshot geht auch.</div>';
+  mm.forEach(function(x){var isIn=x.t==='in',lab=(isIn?BI:BC).filter(function(c){return c.id===x.sc})[0];
+    h+='<div class="wrow"><button class="wt" type="button" data-act="spedit" data-id="'+x.id+'">'+esc(x.title||(lab?lab.n:'Eintrag'))+'<small>'+(lab?lab.e+' '+lab.n+' · ':'')+(x.date?fd(x.date):'')+(x.files&&x.files.length?' · 📎 '+x.files.length:'')+(x.note?' · '+esc(x.note):'')+'</small></button><b style="padding:0 12px;white-space:nowrap;color:'+(isIn?'var(--deep)':'inherit')+'">'+(isIn?'+':'')+eur(+x.amount||0)+'</b></div>'});
   return h;
 }
 function numIn(v){var n=parseFloat(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
+function spOpts(t,sel){var l=t==='in'?BI:BC;return l.map(function(c){return '<option value="'+c.id+'"'+(sel===c.id?' selected':'')+'>'+c.e+' '+c.n+'</option>'}).join('')}
 function openSpend(id){
-  var x=id?items[id]:{title:'',amount:'',date:TD<spendMonth+'-01'||TD.slice(0,7)!==spendMonth?spendMonth+'-01':TD,note:'',files:[]};if(!x)return;
+  var x=id?items[id]:{t:'out',sc:'food',title:'',amount:'',date:(TD.slice(0,7)!==spendMonth?spendMonth+'-01':TD),note:'',files:[]};if(!x)return;
   var f='';(x.files||[]).forEach(function(q,i){f+='<div class="file"><button class="fn" type="button" data-act="spopen" data-id="'+id+'" data-i="'+i+'">'+esc(q.name)+'</button><button class="x" type="button" data-act="spdelf" data-id="'+id+'" data-i="'+i+'" aria-label="Entfernen">×</button></div>'});
-  document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+(id?'Ausgabe':'Neue Ausgabe')+'</h3>'
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+(id?'Eintrag':'Neuer Eintrag')+'</h3>'
+   +'<div class="segs" style="margin-bottom:14px"><button class="mode" type="button" data-act="sptype" data-id="out" aria-pressed="'+(x.t!=='in')+'">Ausgabe</button><button class="mode" type="button" data-act="sptype" data-id="in" aria-pressed="'+(x.t==='in')+'">Einnahme</button></div><input type="hidden" id="s-type" value="'+(x.t==='in'?'in':'out')+'">'
    +'<div class="field"><label for="s-amt">Betrag in Euro</label><input id="s-amt" inputmode="decimal" placeholder="0,00" value="'+(x.amount?String(x.amount).replace('.',','):'')+'"></div>'
+   +'<div class="field"><label for="s-sc">Bereich</label><select id="s-sc">'+spOpts(x.t==='in'?'in':'out',x.sc)+'</select></div>'
    +'<div class="field"><label for="s-title">Wofür</label><input id="s-title" value="'+esc(x.title)+'" placeholder="z. B. Hose Zalando" autocomplete="off"></div>'
    +'<div class="field"><label for="s-date">Datum</label><input id="s-date" type="date" value="'+esc(x.date)+'"></div>'
    +'<div class="field"><label for="s-note">Notiz</label><input id="s-note" value="'+esc(x.note||'')+'"></div>'
@@ -629,9 +645,9 @@ function openSpend(id){
 }
 function saveSpend(id){
   var amt=numIn(document.getElementById('s-amt').value);if(!amt){toast('Bitte gib einen Betrag ein.');return}
-  var d={amount:amt,title:document.getElementById('s-title').value.trim(),date:document.getElementById('s-date').value||TD,note:document.getElementById('s-note').value.trim()};
+  var d={t:document.getElementById('s-type').value,sc:document.getElementById('s-sc').value,amount:amt,title:document.getElementById('s-title').value.trim(),date:document.getElementById('s-date').value||TD,note:document.getElementById('s-note').value.trim()};
   var nid=id||uid(),o=id&&items[id]?Object.assign({},items[id],d):mk(Object.assign({kind:'spend',cat:'inbox',src:'app',files:[]},d));
-  spendMonth=d.date.slice(0,7);
+  spendMonth=d.date.slice(0,7)<BMIN?BMIN:d.date.slice(0,7);
   var fl=document.getElementById('s-file'),picked=fl&&fl.files?Array.prototype.slice.call(fl.files):[];
   put(nid,o);closeSheet();
   if(picked.length&&store&&store.storage){
@@ -642,8 +658,11 @@ function saveSpend(id){
   }else toast('Gespeichert',1500);
 }
 function openBudgetSet(){
-  document.getElementById('sheet').innerHTML='<h3 id="shTitle">Monatsbudget</h3><div class="field"><label for="b-amt">Wie viel möchtest du pro Monat ausgeben (Euro)?</label><input id="b-amt" inputmode="decimal" placeholder="z. B. 800" value="'+(budgetAmt()?String(budgetAmt()).replace('.',','):'')+'"></div><div class="acts"><button class="btn primary" type="button" data-act="bsave">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
-  document.getElementById('scrim').classList.add('on');setTimeout(function(){var i=document.getElementById('b-amt');if(i)i.focus()},50);
+  var safe=0;BI.forEach(function(i){safe+=i.min});
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">Monatsbudgets</h3><p class="note" style="margin:0 0 12px">Sicher eingeplant sind '+eur(safe)+' im Monat (Oma, Papa, MCP-Minimum). Verteile das auf die Bereiche.</p>'
+   +BC.map(function(c){return '<div class="field"><label for="b-'+c.id+'">'+c.e+' '+c.n+' (Euro)</label><input id="b-'+c.id+'" inputmode="decimal" value="'+String(bCfg(c.id)).replace('.',',')+'"></div>'}).join('')
+   +'<div class="acts"><button class="btn primary" type="button" data-act="bsave">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
+  document.getElementById('scrim').classList.add('on');
 }
 function viewIdeas(){
   var all=list().filter(function(t){return !t.done});
@@ -931,9 +950,10 @@ document.addEventListener('click',function(e){
   else if(a==='ai')sortWithClaude();
   else if(a==='save')saveSheet(id);
   else if(a==='new'){if(tab==='budget')openSpend('');else if(tab==='wish')openWish('');else openNew(id||'')}
-  else if(a==='bmon'){var yy=+spendMonth.slice(0,4),mm=+spendMonth.slice(5,7)-1+(+id);yy+=Math.floor(mm/12);mm=((mm%12)+12)%12;spendMonth=yy+'-'+pad(mm+1);render()}
+  else if(a==='bmon'){var yy=+spendMonth.slice(0,4),mm=+spendMonth.slice(5,7)-1+(+id);yy+=Math.floor(mm/12);mm=((mm%12)+12)%12;var nm=yy+'-'+pad(mm+1);if(nm>=BMIN){spendMonth=nm;render()}}
   else if(a==='bset')openBudgetSet();
-  else if(a==='bsave'){var bv=numIn(document.getElementById('b-amt').value);put('cfg-budget',mk({kind:'cfg',cat:'inbox',title:'Budget',amount:bv}));closeSheet();toast('Budget gespeichert',1500)}
+  else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){cfg[c.id]=numIn(document.getElementById('b-'+c.id).value)});put('cfg-budget',cfg);closeSheet();toast('Budgets gespeichert',1500)}
+  else if(a==='sptype'){document.getElementById('s-type').value=id;document.querySelectorAll('[data-act=sptype]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.id===id?'true':'false')});document.getElementById('s-sc').innerHTML=spOpts(id,id==='in'?'mcp':'food')}
   else if(a==='spedit')openSpend(id);
   else if(a==='spsave')saveSpend(id);
   else if(a==='spfile'){document.getElementById('s-file').click()}
