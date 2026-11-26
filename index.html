@@ -540,7 +540,7 @@ function quickForm(){
    +'<div class="segs"><button class="mode" type="button" data-act="qwhen" data-id="0">Heute</button><button class="mode" type="button" data-act="qwhen" data-id="1">Morgen</button><button class="mode" type="button" data-act="qwhen" data-id="7">In einer Woche</button></div>'
    +'<button class="btn primary" type="button" data-act="qcreate">Aufgabe anlegen</button></div>';
 }
-var WL=[{id:'shop',e:'🛍️',n:'Shopping',ph:'z. B. Sonnencreme'},{id:'stay',e:'🏨',n:'Unterkünfte',ph:'z. B. Finca in Andalusien'},{id:'place',e:'📍',n:'Orte',ph:'z. B. Lissabon'},{id:'insp',e:'✨',n:'Inspiration',ph:'Idee oder Link'}],wishSel='shop';
+var WL=[{id:'stay',e:'🏨',n:'Unterkünfte',ph:'z. B. Finca in Andalusien'},{id:'place',e:'📍',n:'Orte',ph:'z. B. Lissabon'},{id:'insp',e:'✨',n:'Inspiration',ph:'Idee oder Link'}],wishSel='stay';
 function wishes(){return Object.keys(items).filter(function(id){return items[id].kind==='wish'}).map(function(id){return Object.assign({id:id},items[id])}).sort(function(a,b){return (b.created||'')<(a.created||'')?-1:1})}
 function viewWish(){
   var cur=WL.filter(function(x){return x.id===wishSel})[0],all=wishes();
