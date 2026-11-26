@@ -602,19 +602,28 @@ var BMIN='2026-12',spendMonth=TD.slice(0,7)<BMIN?BMIN:TD.slice(0,7);
 var BC=[{id:'rent',e:'🏨',n:'Miete & Hotels',d:350},{id:'flug',e:'✈️',n:'Flüge',d:140},{id:'food',e:'🍽️',n:'Essen',d:140},{id:'fun',e:'🎉',n:'Spaß',d:70}];
 var BI=[{id:'oma',e:'👵',n:'Oma',min:200,max:200},{id:'papa',e:'👨',n:'Papa',min:500,max:500},{id:'mcp',e:'💼',n:'MCP',min:0,max:0,bonus:1},{id:'side',e:'🌱',n:'Nebenprojekt',min:0,max:0,bonus:1}];
 function spends(){return Object.keys(items).filter(function(id){return items[id].kind==='spend'}).map(function(id){return Object.assign({id:id},items[id])})}
+function flugY(){var c=items['cfg-budget'];return c&&c.flugY!=null?+c.flugY:1680}
 function bCfg(id){var c=items['cfg-budget'],b=BC.filter(function(x){return x.id===id})[0];return c&&c[id]!=null?+c[id]:b.d}
 function bar(used,cap){var p=cap?Math.min(100,Math.round(used/cap*100)):0,over=used>cap;return '<div class="bbar" style="background:color-mix(in srgb,var(--ink) 12%,transparent);margin:8px 0 6px"><i style="width:'+p+'%;background:'+(over?'var(--late)':'var(--deep)')+'"></i></div>'}
 function viewBudget(){
   var mm=spends().filter(function(x){return (x.date||'').slice(0,7)===spendMonth}).sort(function(a,b){return (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0});
-  var outs=mm.filter(function(x){return x.t!=='in'}),ins=mm.filter(function(x){return x.t==='in'});
+  var outs=mm.filter(function(x){return x.t!=='in'&&x.sc!=='flug'}),flugM=mm.filter(function(x){return x.t!=='in'&&x.sc==='flug'}),ins=mm.filter(function(x){return x.t==='in'});
   var sumOut=0,tot=0,got=0,safe=0,hi=0;outs.forEach(function(x){sumOut+=+x.amount||0});ins.forEach(function(x){got+=+x.amount||0});
-  BC.forEach(function(c){tot+=bCfg(c.id)});BI.forEach(function(i){safe+=i.min;hi+=i.max});
+  BC.forEach(function(c){if(c.id!=='flug')tot+=bCfg(c.id)});BI.forEach(function(i){safe+=i.min;hi+=i.max});
   var left=tot-sumOut,y=+spendMonth.slice(0,4),m=+spendMonth.slice(5,7)-1;
   var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat"'+(spendMonth<=BMIN?' disabled style="opacity:.3"':'')+'>‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
   h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig im Monat')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>Ausgegeben '+eur(sumOut)+'</span><span>von '+eur(tot)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Budgets ändern</button></div></div>';
   h+='<div class="acts" style="margin:0 0 6px"><button class="btn primary" type="button" data-act="new">+ Eintrag</button></div>';
   h+='<h2>Bereiche</h2>';
-  BC.forEach(function(c){var u=0;outs.forEach(function(x){if((x.sc||'fun')===c.id)u+=+x.amount||0});var cap=bCfg(c.id);
+  BC.forEach(function(c){
+    if(c.id==='flug'){
+      var yr=spendMonth.slice(0,4),pot=flugY(),yu=0;
+      if(+yr>=2027){spends().forEach(function(x){if(x.t!=='in'&&x.sc==='flug'&&(x.date||'').slice(0,4)===yr)yu+=+x.amount||0});
+        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>✈️ Flüge '+yr+' (ganzes Jahr)</span><span>'+eur(pot-yu)+' übrig</span></div>'+bar(yu,pot)+'<small style="color:var(--muted)">'+eur(yu)+' von '+eur(pot)+' im Jahr · entspricht '+eur(Math.round(pot/12))+' im Monat</small></div>'}
+      else{var fu=0;flugM.forEach(function(x){fu+=+x.amount||0});
+        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="font-weight:500">✈️ Flüge</div><small style="color:var(--muted)">Das Jahresbudget von '+eur(pot)+' startet im Januar 2027.'+(fu?' In diesem Monat schon '+eur(fu)+' gebucht.':'')+'</small></div>'}
+      return}
+    var u=0;outs.forEach(function(x){if((x.sc||'fun')===c.id)u+=+x.amount||0});var cap=bCfg(c.id);
     h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+' übrig</span></div>'+bar(u,cap)+'<small style="color:var(--muted)">'+eur(u)+' von '+eur(cap)+'</small></div>'});
   h+='<h2>Einnahmen</h2>';
   BI.forEach(function(i){var r=0;ins.forEach(function(x){if(x.sc===i.id)r+=+x.amount||0});
@@ -665,7 +674,7 @@ function saveSpend(id){
 function openBudgetSet(){
   var safe=0;BI.forEach(function(i){safe+=i.min});
   document.getElementById('sheet').innerHTML='<h3 id="shTitle">Monatsbudgets</h3><p class="note" style="margin:0 0 12px">Sicher eingeplant sind '+eur(safe)+' im Monat (Oma und Papa). Verteile das auf die Bereiche.</p>'
-   +BC.map(function(c){return '<div class="field"><label for="b-'+c.id+'">'+c.e+' '+c.n+' (Euro)</label><input id="b-'+c.id+'" inputmode="decimal" value="'+String(bCfg(c.id)).replace('.',',')+'"></div>'}).join('')
+   +BC.map(function(c){var fl=c.id==='flug';return '<div class="field"><label for="b-'+c.id+'">'+c.e+' '+c.n+(fl?' pro Jahr, ab Januar 2027':' pro Monat')+' (Euro)</label><input id="b-'+c.id+'" inputmode="decimal" value="'+String(fl?flugY():bCfg(c.id)).replace('.',',')+'"></div>'}).join('')
    +'<div class="acts"><button class="btn primary" type="button" data-act="bsave">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
   document.getElementById('scrim').classList.add('on');
 }
@@ -957,7 +966,7 @@ document.addEventListener('click',function(e){
   else if(a==='new'){if(tab==='budget')openSpend('');else if(tab==='wish')openWish('');else openNew(id||'')}
   else if(a==='bmon'){var yy=+spendMonth.slice(0,4),mm=+spendMonth.slice(5,7)-1+(+id);yy+=Math.floor(mm/12);mm=((mm%12)+12)%12;var nm=yy+'-'+pad(mm+1);if(nm>=BMIN){spendMonth=nm;render()}}
   else if(a==='bset')openBudgetSet();
-  else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){cfg[c.id]=numIn(document.getElementById('b-'+c.id).value)});put('cfg-budget',cfg);closeSheet();toast('Budgets gespeichert',1500)}
+  else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){var v=numIn(document.getElementById('b-'+c.id).value);if(c.id==='flug')cfg.flugY=v;else cfg[c.id]=v});put('cfg-budget',cfg);closeSheet();toast('Budgets gespeichert',1500)}
   else if(a==='inadd')openIncome(id);
   else if(a==='insave'){var iv=numIn(document.getElementById('in-amt').value);if(!iv){toast('Bitte gib einen Betrag ein.');return}put(uid(),mk({kind:'spend',cat:'inbox',src:'app',t:'in',sc:id,amount:iv,title:'',date:(TD.slice(0,7)===spendMonth?TD:spendMonth+'-01'),files:[]}));closeSheet();toast('Eingetragen',1500)}
   else if(a==='sptype'){document.getElementById('s-type').value=id;document.querySelectorAll('[data-act=sptype]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.id===id?'true':'false')});document.getElementById('s-sc').innerHTML=spOpts(id,id==='in'?'mcp':'food')}
