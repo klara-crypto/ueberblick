@@ -348,7 +348,6 @@ var CATS=[
  {id:'corinna',e:'📚',n:'Corinna',d:'Beratung für Corinna Cellarius (Braun Marketing Consulting)',k:['corinna','zeitgeister','cellarius','brüssel','braun marketing']},
  {id:'mcp',e:'💼',n:'MCP',d:'My Coach Path: Leads, Outreach, Follow-ups, Sales',k:['mcp','my coach path','lead','follow','outreach','linkedin','sales','loom','pipeline','tom','sven','coaching']},
  {id:'reisen',e:'✈️',n:'Reisen',d:'Flüge, Unterkünfte, Transfers, Visa, Packen',k:['flug','flieg','hotel','visum','visa','einreise','bahn','zug','bus','taxi','check-in','checkin','koffer','pack','airbnb','reise','japan','vietnam','tokio','osaka','hiroshima','malaysia','spanien','águilas','aguilas','madeira','schweden','zürich','transfer','skyliner','flughafen','buchen']},
- {id:'geld',e:'💰',n:'Finanzen',d:'Steuern, Rechnungen, Zahlungen, Versicherungen',k:['steuer','finanzamt','überweis','bezahl','konto','versicherung','miete','abo','kündig','schulden','schuldet','ausgleich','budget','rechnung','€','euro']},
  {id:'biz',e:'🌹',n:'Rose Retreats',d:'Rose Retreats: Brand, Logo, Skills, Webseite, Retreats',k:['rose','retreat','logo','usp','vorlage','skill','netlify','stripe','webseite','brand','business','angebot','template','nebenprojekt','café','cafe','produkt','idee']},
  {id:'content',e:'🎬',n:'Content',d:'Instagram, Reels, Posts, Videos, Feedflow, Etsy',k:['instagram','insta','post','posts','reel','reels','content','feedflow','etsy','metricool','caption','story','video','videos','schneiden','drehen','canva']},
  {id:'privat',e:'🏡',n:'Privat',d:'Alltag, Gesundheit, Sport, Freunde, Geburtstage',k:['geburtstag','arzt','zahnarzt','sport','training','lauf','rad','schwimm','geschenk','einkauf','freund','noah','jeanne','wohnung','familie','mama','papa','putzen','termin']},
@@ -440,7 +439,7 @@ function remove(id){
   if(store){var ref=store.collection('tasks').doc(id);chain[id]=(chain[id]||Promise.resolve()).then(function(){return ref.delete()}).catch(function(){toast('Löschen hat nicht geklappt.')})}
   else lsSave();
 }
-function list(){return Object.keys(items).map(function(id){var t=items[id];return Object.assign({id:id},t)})}
+function list(){return Object.keys(items).map(function(id){var t=items[id];var o=Object.assign({id:id},t);if(o.cat==='geld')o.cat='privat';return o})}
 function mk(o){return Object.assign({title:'',cat:'inbox',kind:'task',due:'',repeat:'none',done:false,focus:false,note:'',link:'',amount:null,created:new Date().toISOString()},o)}
 function strip(t){var o=Object.assign({},t);delete o.id;return o}
 
@@ -704,6 +703,7 @@ async function sortWithClaude(){
 }
 function openSheet(id){
   var t=items[id];if(!t)return;
+  if(t.cat==='geld')t=Object.assign({},t,{cat:'privat'});
   var opts=CATS.map(function(c){return '<option value="'+c.id+'"'+(t.cat===c.id?' selected':'')+'>'+c.e+' '+esc(c.n)+'</option>'}).join('');
   var kinds=[['task','Aufgabe'],['idea','Idee'],['date','Termin']].map(function(k){return '<option value="'+k[0]+'"'+(t.kind===k[0]?' selected':'')+'>'+k[1]+'</option>'}).join('');
   var reps=[['none','Nie'],['daily','Täglich'],['monthly','Monatlich'],['yearly','Jährlich']].map(function(k){return '<option value="'+k[0]+'"'+((t.repeat||'none')===k[0]?' selected':'')+'>'+k[1]+'</option>'}).join('');
