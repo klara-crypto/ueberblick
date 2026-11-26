@@ -238,7 +238,6 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
   <nav class="tabs" id="tabs" role="tablist" aria-label="Ansichten">
     <button role="tab" type="button" data-tab="today" aria-selected="true"><span class="ic">🌤️</span>Heute</button>
     <button role="tab" type="button" data-tab="all" aria-selected="false"><span class="ic">🗂️</span>Projekte</button>
-    <button role="tab" type="button" data-tab="ideas" aria-selected="false"><span class="ic">💡</span>Ideen<span class="cnt" id="inboxCnt" hidden></span></button>
     <button role="tab" type="button" data-tab="trip" aria-selected="false"><span class="ic">✈️</span>Reisen</button>
   </nav>
 </div>
@@ -439,7 +438,7 @@ function remove(id){
   if(store){var ref=store.collection('tasks').doc(id);chain[id]=(chain[id]||Promise.resolve()).then(function(){return ref.delete()}).catch(function(){toast('Löschen hat nicht geklappt.')})}
   else lsSave();
 }
-function list(){return Object.keys(items).map(function(id){var t=items[id];var o=Object.assign({id:id},t);if(o.cat==='geld')o.cat='privat';return o})}
+function list(){return Object.keys(items).map(function(id){var t=items[id];var o=Object.assign({id:id},t);if(o.cat==='geld')o.cat='privat';return o}).filter(function(t){return t.kind!=='idea'&&t.kind!=='date'})}
 function mk(o){return Object.assign({title:'',cat:'inbox',kind:'task',due:'',repeat:'none',done:false,focus:false,note:'',link:'',amount:null,created:new Date().toISOString()},o)}
 function strip(t){var o=Object.assign({},t);delete o.id;return o}
 
@@ -544,7 +543,7 @@ function viewIdeas(){
     var a=ideas.filter(function(t){return t.cat===c.id});
     if(a.length)h+=section(c.e+' '+c.n,a,{hideCat:true,promote:true});
   });
-  if(!inb.length&&!ideas.length)h+='<div class="empty" style="margin-top:18px">Die Ideenkiste ist noch leer 💭<br>Wähle unten „Idee“ und tippe los. Den Bereich erkenne ich selbst.</div>';
+  if(!inb.length&&!ideas.length)h+='<div class="empty" style="margin-top:18px">Alles sortiert 🌸</div>';
   return h;
 }
 function fd(x){return parse(x).getDate()+'. '+MON[parse(x).getMonth()]}
@@ -651,13 +650,13 @@ function viewTrip(){
 }
 function render(){
   var hr=new Date().getHours(),gr=hr<11?'Guten Morgen ☀️':hr<18?'Hallo 🌸':'Guten Abend 🌙';document.getElementById('date').textContent=gr+', Klara · '+WDL[new Date().getDay()]+', '+new Date().getDate()+'. '+MONL[new Date().getMonth()];
-  var cur=curStay(),titles={today:'Dein Tag',all:'Deine Projekte',ideas:'Ideenkiste',trip:'Unterwegs',money:'Geld'};
+  var cur=curStay(),titles={today:'Dein Tag',all:'Deine Projekte',ideas:'Unsortiert',trip:'Unterwegs',money:'Geld'};
   document.getElementById('h1').textContent=titles[tab];
   document.getElementById('where').innerHTML=cur?cur.f+' <b>'+esc(cur.n)+'</b>, Tag '+(Math.min(diff(cur.s,TD)+1,Math.max(diff(cur.s,cur.e),1)))+' von '+Math.max(diff(cur.s,cur.e),1):'';
   var v={today:viewToday,all:viewAll,ideas:viewIdeas,trip:viewTrip,money:viewMoney}[tab]();
   document.getElementById('view').innerHTML=v;
   var inb=list().filter(function(t){return t.cat==='inbox'&&!t.done}).length,b=document.getElementById('inboxCnt');
-  b.hidden=!inb;b.textContent=inb;
+  if(b){b.hidden=!inb;b.textContent=inb}
   document.querySelectorAll('#tabs button').forEach(function(x){x.setAttribute('aria-selected',x.dataset.tab===tab?'true':'false')});
 }
 /* ---------- Aktionen ---------- */
@@ -677,7 +676,7 @@ function toggleDone(id){
 function addEntry(raw){
   var w=parseWhen(raw),title=w.title,cat=classify(raw);
   var kind=mode,low=raw.toLowerCase();
-  if(mode==='task'&&/^(idee|💡)/i.test(raw.trim())){kind='idea';title=title.replace(/^(idee|💡)\s*[:\-–]?\s*/i,'')||title}
+  
   var o=mk({title:title,cat:cat,kind:kind,due:w.due,src:'app'});
   if(kind==='date'&&/geburtstag/.test(low)){o.repeat='yearly';o.cat=cat==='inbox'?'privat':cat}
   if(tab==='trip'&&stationSel){o.stay=stationSel;if(o.cat==='inbox')o.cat='reisen'}
@@ -719,7 +718,7 @@ function openSheet(id){
    +'<label class="check"><input type="checkbox" id="f-focus"'+(t.focus?' checked':'')+'> Als Fokus für heute markieren</label>'
    +'<details><summary>Titel, Bereich, Datum und mehr</summary><div style="margin-top:10px">'
    +'<div class="field"><label for="f-title">Titel</label><input id="f-title" value="'+esc(t.title)+'"></div>'
-   +'<div class="two"><div class="field"><label for="f-cat">Bereich</label><select id="f-cat">'+opts+'</select></div><div class="field"><label for="f-kind">Art</label><select id="f-kind">'+kinds+'</select></div></div>'
+   +'<div class="two"><div class="field"><label for="f-cat">Bereich</label><select id="f-cat">'+opts+'</select></div></div>'
    +'<div class="two"><div class="field"><label for="f-due">Datum</label><input id="f-due" type="date" value="'+esc(t.due||'')+'"></div><div class="field"><label for="f-rep">Wiederholen</label><select id="f-rep">'+reps+'</select></div></div>'
    +'<div class="two"><div class="field"><label for="f-stay">Station</label><select id="f-stay">'+sopts+'</select></div><div class="field"><label for="f-grp">Gruppe</label><select id="f-grp"><option value="">Automatisch</option>'+GRP.map(function(g){return '<option value="'+g[0]+'"'+(t.grp===g[0]?' selected':'')+'>'+g[1]+'</option>'}).join('')+'</select></div></div>'
    +'<div class="field"><label for="f-after">Wartet auf (mehrere möglich)</label><select id="f-after" multiple size="4">'+aopts+'</select></div>'
@@ -734,7 +733,7 @@ function openNew(pre,opt){newPre=opt||null;
   var po='<option value="">Automatisch</option>'+CATS.filter(function(c){return c.id!=='inbox'}).map(function(c){return '<option value="'+c.id+'"'+(pre===c.id?' selected':'')+'>'+c.e+' '+esc(c.n)+'</option>'}).join('');
   document.getElementById('sheet').innerHTML='<h3 id="shTitle">Neu</h3>'
    +'<div class="field"><label for="n-what">Was</label><input id="n-what" placeholder="z. B. Videos schneiden morgen" autocomplete="off"></div>'
-   +'<div class="two"><div class="field"><label for="n-kind">Art</label><select id="n-kind"><option value="task">Aufgabe</option><option value="idea">Idee</option><option value="date">Termin</option></select></div><div class="field"><label for="n-cat">Bereich</label><select id="n-cat">'+po+'</select></div></div>'
+   +'<div class="two"><div class="field"><label for="n-cat">Bereich</label><select id="n-cat">'+po+'</select></div></div>'
    +'<div class="field"><label for="n-when">Wann</label><input id="n-when" type="date"></div>'
    +'<div class="segs" style="margin-bottom:14px"><button class="mode" type="button" data-act="nwhen" data-id="0">Heute</button><button class="mode" type="button" data-act="nwhen" data-id="1">Morgen</button><button class="mode" type="button" data-act="nwhen" data-id="7">In einer Woche</button></div>'
    +'<div class="acts"><button class="btn primary" type="button" data-act="nsave">Anlegen</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
@@ -743,7 +742,7 @@ function openNew(pre,opt){newPre=opt||null;
 }
 function saveNew(){
   var raw=document.getElementById('n-what').value.trim();if(!raw){toast('Bitte schreib zuerst, was es ist.');return}
-  var kind=document.getElementById('n-kind').value,w=parseWhen(raw),due=document.getElementById('n-when').value||w.due,
+  var kind='task',w=parseWhen(raw),due=document.getElementById('n-when').value||w.due,
       cat=document.getElementById('n-cat').value||classify(raw),low=raw.toLowerCase();
   var o=mk({title:w.title||raw,cat:cat,kind:kind,due:due,src:'app'});
   if(kind==='date'&&/geburtstag/.test(low)){o.repeat='yearly';if(cat==='inbox')o.cat='privat'}
@@ -791,7 +790,7 @@ function closeSheet(){document.getElementById('scrim').classList.remove('on')}
 function saveSheet(id){
   var t=items[id];if(!t)return;var n=Object.assign({},t);
   n.title=document.getElementById('f-title').value.trim()||t.title;
-  n.cat=document.getElementById('f-cat').value;n.kind=document.getElementById('f-kind').value;
+  n.cat=document.getElementById('f-cat').value;n.kind='task';
   n.due=document.getElementById('f-due').value;n.repeat=document.getElementById('f-rep').value;
   n.stay=document.getElementById('f-stay').value;n.grp=document.getElementById('f-grp').value;
   n.after=Array.prototype.filter.call(document.getElementById('f-after').options,function(o){return o.selected}).map(function(o){return o.value});
