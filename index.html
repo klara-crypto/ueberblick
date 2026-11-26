@@ -554,6 +554,22 @@ function viewWish(){
   if(dn.length)h+='<h2>Erledigt<small>'+dn.length+'</small></h2>'+dn.map(row).join('')+'<p class="note"><button class="btn" type="button" data-act="wclear">Erledigte entfernen</button></p>';
   return h;
 }
+function wishTitle(u){
+  try{var a=new URL(u),seg=a.pathname.split('/').filter(Boolean).pop()||'';
+    if(/\.html?$/i.test(seg)||/-/.test(seg)){var tk=seg.replace(/\.html?$/i,'').split('-').filter(Boolean);
+      while(tk.length>2&&/\d/.test(tk[tk.length-1])&&tk[tk.length-1].length<=12)tk.pop();
+      if(tk.length&&/\d/.test(tk[tk.length-1])&&tk[tk.length-1].length<=12)tk.pop();
+      var t=tk.join(' ');if(t.length>3)return t.charAt(0).toUpperCase()+t.slice(1)}
+    return a.hostname.replace(/^www\./,'')}catch(e){return u}}
+function addWishText(txt){
+  var lines=String(txt).split(/\r?\n|\s{2,}/).map(function(x){return x.trim()}).filter(Boolean),have={},n=0;
+  wishes().forEach(function(w){if(w.wl===wishSel&&w.link)have[w.link]=1});
+  lines.forEach(function(l){
+    var m=l.match(/https?:\/\/\S+/);
+    if(m){if(have[m[0]])return;have[m[0]]=1;put(uid()+n,mk({kind:'wish',cat:'inbox',wl:wishSel,src:'app',title:l.replace(m[0],'').trim()||wishTitle(m[0]),link:m[0]}))}
+    else put(uid()+n,mk({kind:'wish',cat:'inbox',wl:wishSel,src:'app',title:l}));
+    n++});
+  if(n>1)toast(n+' Einträge hinzugefügt',2200)}
 function openWish(id){
   var w=id?items[id]:{title:'',wl:wishSel,link:'',note:''};if(!w)return;
   var opts=WL.map(function(x){return '<option value="'+x.id+'"'+(w.wl===x.id?' selected':'')+'>'+x.e+' '+x.n+'</option>'}).join('');
@@ -863,7 +879,7 @@ document.addEventListener('click',function(e){
   else if(a==='wsave')saveWish(id);
   else if(a==='wtoggle'){var wt=items[id];if(wt){put(id,Object.assign({},wt,{done:!wt.done}))}}
   else if(a==='wclear'){wishes().filter(function(w){return w.wl===wishSel&&w.done}).forEach(function(w){remove(w.id)})}
-  else if(a==='wquick'){var qi=document.getElementById('w-quick'),qv=qi&&qi.value.trim();if(qv){var q=mk({kind:'wish',cat:'inbox',wl:wishSel,src:'app',title:qv});if(/^https?:\/\//i.test(qv)){q.link=qv;q.title=qv.replace(/^https?:\/\/(www\.)?/i,'').split('/')[0]}put(uid(),q)}}
+  else if(a==='wquick'){var qi=document.getElementById('w-quick');if(qi&&qi.value.trim()){addWishText(qi.value);qi.value=''}}
   else if(a==='stnew')openNew('reisen',{stay:stationSel,grp:el.dataset.g});
   else if(a==='sdup')document.getElementById('st-up').click();
   else if(a==='sdopen'){var s1=stayById(stationSel),f1=s1&&s1.docs&&s1.docs[+el.dataset.i];if(f1)store.storage.url(f1.path).then(function(u){window.open(u,'_blank')},function(){toast('Die Datei lässt sich gerade nicht öffnen.')})}
@@ -901,6 +917,7 @@ document.getElementById('view').addEventListener('input',function(e){if(e.target
 document.getElementById('view').addEventListener('change',function(e){
   if(e.target.id==='st-up'){if(e.target.files.length)uploadStayDocs(e.target.files);e.target.value='';return}if(e.target.id==='q-proj')qc.proj=e.target.value;if(e.target.id==='q-when')qc.when=e.target.value});
 document.getElementById('scrim').addEventListener('click',function(e){if(e.target===this)closeSheet()});
+document.addEventListener('paste',function(e){if(e.target.id!=='w-quick')return;var t=(e.clipboardData||window.clipboardData).getData('text');if(/\r?\n/.test(t.trim())){e.preventDefault();addWishText(t)}});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();if(e.key==='Enter'&&e.target.id==='w-quick'){e.preventDefault();var b=document.querySelector('[data-act=wquick]');if(b)b.click()}});
 /* ---------- Geld ---------- */
 var money={},moneyMonth=TD.slice(0,7),moneyAcct='all',LSM='klara-money-v1';
