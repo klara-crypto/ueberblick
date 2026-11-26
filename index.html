@@ -170,6 +170,19 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 .bbar i{display:block;height:100%;background:var(--on-deep);border-radius:999px}
 .bcard.over{background:var(--late)}
 .bsub{display:flex;justify-content:space-between;font-size:13px;opacity:.9}
+.soft{background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:20px;padding:12px 16px;margin-bottom:8px}
+.soft .sr{display:flex;justify-content:space-between;font-weight:500;font-size:15px}
+.soft .sr .mut{color:var(--muted);font-weight:400;font-size:13px}
+.soft small{color:var(--muted);font-size:12px}
+.soft.sr1{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px}
+.soft.sr1 .sn{flex:1;padding:8px 4px;font-size:15px}
+.soft.sr1 .wt{flex:1;min-width:0;text-align:left;border:0;background:none;padding:8px 8px;font:500 15px/1.3 var(--font);color:var(--ink)}
+.soft.sr1 .wt small{display:block;margin-top:2px}
+.soft.sr1 .chk{width:44px}
+.soft.d .sn{color:var(--muted)}
+.soft .plus{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--ink);font-size:20px;line-height:1}
+.sl{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:22px 4px 8px}
+.sl .lk{border:0;background:none;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);text-decoration:underline}
 .bnav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
 .bnav button{border:1px solid var(--ink);background:none;border-radius:50%;width:40px;height:40px;font-size:18px;color:var(--ink)}
 .bnav b{font:500 13px var(--font);letter-spacing:.16em;text-transform:uppercase}
@@ -608,32 +621,29 @@ function bar(used,cap){var p=cap?Math.min(100,Math.round(used/cap*100)):0,over=u
 function viewBudget(){
   var mm=spends().filter(function(x){return (x.date||'').slice(0,7)===spendMonth}).sort(function(a,b){return (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0});
   var outs=mm.filter(function(x){return x.t!=='in'&&x.sc!=='flug'}),flugM=mm.filter(function(x){return x.t!=='in'&&x.sc==='flug'}),ins=mm.filter(function(x){return x.t==='in'});
-  var sumOut=0,tot=0,got=0,safe=0,hi=0;outs.forEach(function(x){sumOut+=+x.amount||0});ins.forEach(function(x){got+=+x.amount||0});
-  BC.forEach(function(c){if(c.id!=='flug')tot+=bCfg(c.id)});BI.forEach(function(i){safe+=i.min;hi+=i.max});
+  var sumOut=0,tot=0;outs.forEach(function(x){sumOut+=+x.amount||0});
+  BC.forEach(function(c){if(c.id!=='flug')tot+=bCfg(c.id)});
   var left=tot-sumOut,y=+spendMonth.slice(0,4),m=+spendMonth.slice(5,7)-1;
-  var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat"'+(spendMonth<=BMIN?' disabled style="opacity:.3"':'')+'>‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
-  h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig diesen Monat')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>Ausgegeben '+eur(sumOut)+'</span><span>von '+eur(tot)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Limits ändern</button></div></div>';
-  h+='<div class="acts" style="margin:0 0 6px"><button class="btn primary" type="button" data-act="new">+ Eintrag</button></div>';
-  h+='<h2>Bereiche</h2>';
+  var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat"'+(spendMonth<=BMIN?' disabled style="opacity:.25"':'')+'>‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
+  h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über dem Limit':'Noch übrig')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>'+eur(sumOut)+' ausgegeben</span><span>Limit '+eur(tot)+'</span></div></div>';
+  h+='<p class="sl">Bereiche <button type="button" class="lk" data-act="bset">Limits ändern</button></p>';
   BC.forEach(function(c){
     if(c.id==='flug'){
       var yr=spendMonth.slice(0,4),pot=flugY(),yu=0;
       if(+yr>=2027){spends().forEach(function(x){if(x.t!=='in'&&x.sc==='flug'&&(x.date||'').slice(0,4)===yr)yu+=+x.amount||0});
-        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>🚆 Transfer '+yr+' (ganzes Jahr)</span><span>'+eur(pot-yu)+' übrig</span></div>'+bar(yu,pot)+'<small style="color:var(--muted)">'+eur(yu)+' von '+eur(pot)+' im Jahr · entspricht '+eur(Math.round(pot/12))+' im Monat</small></div>'}
+        h+='<div class="soft"><div class="sr"><span>'+c.e+' '+c.n+'</span><span>'+eur(pot-yu)+'</span></div>'+bar(yu,pot)+'<small>'+eur(yu)+' von '+eur(pot)+' im Jahr</small></div>'}
       else{var fu=0;flugM.forEach(function(x){fu+=+x.amount||0});
-        h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="font-weight:500">🚆 Transfer</div><small style="color:var(--muted)">Flug, Bus und Bahn: Das Jahresbudget von '+eur(pot)+' startet im Januar 2027.'+(fu?' In diesem Monat schon '+eur(fu)+' gebucht.':'')+'</small></div>'}
+        h+='<div class="soft"><div class="sr"><span>'+c.e+' '+c.n+'</span><span class="mut">ab Januar'+(fu?' · '+eur(fu):'')+'</span></div></div>'}
       return}
     var u=0;outs.forEach(function(x){if((x.sc||'fun')===c.id)u+=+x.amount||0});var cap=bCfg(c.id);
-    h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+' übrig</span></div>'+bar(u,cap)+'<small style="color:var(--muted)">'+eur(u)+' von '+eur(cap)+'</small></div>'});
-  h+='<h2>Einnahmen</h2>';
+    h+='<div class="soft"><div class="sr"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+'</span></div>'+bar(u,cap)+'<small>'+eur(u)+' von '+eur(cap)+'</small></div>'});
+  h+='<p class="sl">Einnahmen</p>';
   BI.forEach(function(i){var r=0;ins.forEach(function(x){if(x.sc===i.id)r+=+x.amount||0});
-    if(i.fix){var on=r>0;h+='<div class="wrow'+(on?' d':'')+'" style="padding:4px 14px 4px 4px"><button class="chk" type="button" data-act="intoggle" data-id="'+i.id+'" aria-label="Erhalten abhaken"><i></i></button><span style="flex:1;padding:8px 4px">'+i.e+' '+i.n+'<br><small style="color:var(--muted)">'+(on?'erhalten':'noch offen')+'</small></span><b>'+eur(on?r:i.min)+'</b></div>';return}
-    h+='<div class="wrow" style="padding:6px 6px 6px 16px"><span style="flex:1">'+i.e+' '+i.n+'<br><small style="color:var(--muted)">zählt nicht ins Budget</small></span><b style="padding-right:6px">'+eur(r)+'</b><button class="btn" type="button" style="padding:8px 14px" data-act="inadd" data-id="'+i.id+'" aria-label="Einnahme eintragen">+</button></div>'});
-  h+='<p class="note">Sicher eingeplant: '+eur(safe)+' im Monat. Erhalten: '+eur(got)+'. MCP und Rose Retreats sind nicht eingeplant, weil du dir noch nichts auszahlst.</p>';
-  h+='<h2>Verlauf<small>'+mm.length+'</small></h2>';
-  if(!mm.length)h+='<div class="empty">Noch nichts eingetragen. Tippe auf + Eintrag. Ein Screenshot geht auch.</div>';
-  mm.forEach(function(x){var isIn=x.t==='in',lab=(isIn?BI:BC).filter(function(c){return c.id===x.sc})[0];
-    h+='<div class="wrow"><button class="wt" type="button" data-act="spedit" data-id="'+x.id+'">'+esc(x.title||(lab?lab.n:'Eintrag'))+'<small>'+(lab?lab.e+' '+lab.n+' · ':'')+(x.date?fd(x.date):'')+(x.files&&x.files.length?' · 📎 '+x.files.length:'')+(x.note?' · '+esc(x.note):'')+'</small></button><b style="padding:0 12px;white-space:nowrap;color:'+(isIn?'var(--deep)':'inherit')+'">'+(isIn?'+':'')+eur(+x.amount||0)+'</b></div>'});
+    if(i.fix){var on=r>0;h+='<div class="soft sr1'+(on?' d':'')+'"><button class="chk" type="button" data-act="intoggle" data-id="'+i.id+'" aria-label="Erhalten abhaken"><i></i></button><span class="sn">'+i.e+' '+i.n+'</span><b>'+eur(on?r:i.min)+'</b></div>';return}
+    h+='<div class="soft sr1"><span class="sn" style="padding-left:12px">'+i.e+' '+i.n+'</span><b>'+(r?eur(r):'')+'</b><button class="plus" type="button" data-act="inadd" data-id="'+i.id+'" aria-label="Einnahme eintragen">+</button></div>'});
+  if(mm.length){h+='<p class="sl">Verlauf</p>';
+    mm.forEach(function(x){var isIn=x.t==='in',lab=(isIn?BI:BC).filter(function(c){return c.id===x.sc})[0];
+      h+='<div class="soft sr1"><button class="wt" type="button" data-act="spedit" data-id="'+x.id+'">'+esc(x.title||(lab?lab.n:'Eintrag'))+'<small>'+(lab?lab.e+' ':'')+(x.date?fd(x.date):'')+(x.files&&x.files.length?' · 📎':'')+'</small></button><b style="padding-right:8px;white-space:nowrap">'+(isIn?'+':'')+eur(+x.amount||0)+'</b></div>'})}
   return h;
 }
 function openIncome(sc){
