@@ -163,10 +163,10 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 .compose input{flex:1;min-width:0;border:1px solid var(--ink);background:var(--surface);border-radius:999px;padding:11px 18px;font-size:16px;font-weight:300}
 .compose input:focus{border-color:var(--deep);outline:2px solid var(--deep);outline-offset:0}
 .compose button{flex:none;width:50px;border:0;background:var(--accent);color:#E7EDEF;border-radius:50%;font-weight:400;font-size:22px}
-.bcard{background:var(--deep);color:var(--on-deep);border-radius:28px;padding:22px 20px;margin-bottom:16px}
-.bcard .big{font:600 40px/1.1 var(--font);margin:6px 0 2px}
+.bcard{background:var(--deep);color:var(--on-deep);border-radius:22px;padding:12px 16px;margin-bottom:14px}
+.bcard .big{font:600 26px/1.1 var(--font);margin:2px 0 0}
 .bcard .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.8}
-.bbar{height:10px;border-radius:999px;background:rgba(255,255,255,.22);margin:16px 0 10px;overflow:hidden}
+.bbar{height:6px;border-radius:999px;background:rgba(255,255,255,.22);margin:8px 0 6px;overflow:hidden}
 .bbar i{display:block;height:100%;background:var(--on-deep);border-radius:999px}
 .bcard.over{background:var(--late)}
 .bsub{display:flex;justify-content:space-between;font-size:13px;opacity:.9}
@@ -256,7 +256,7 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
   <nav class="tabs" id="tabs" role="tablist" aria-label="Ansichten">
     <button role="tab" type="button" data-tab="today" aria-selected="true"><span class="ic">🌤️</span>Heute</button>
     <button role="tab" type="button" data-tab="all" aria-selected="false"><span class="ic">🗂️</span>Projekte</button>
-    <button role="tab" type="button" data-tab="budget" aria-selected="false"><span class="ic">💶</span>Budget</button>
+    <button role="tab" type="button" data-tab="budget" aria-selected="false"><span class="ic">💶</span>Ausgaben</button>
     <button role="tab" type="button" data-tab="trip" aria-selected="false"><span class="ic">✈️</span>Reisen</button>
   </nav>
 </div>
@@ -612,7 +612,7 @@ function viewBudget(){
   BC.forEach(function(c){if(c.id!=='flug')tot+=bCfg(c.id)});BI.forEach(function(i){safe+=i.min;hi+=i.max});
   var left=tot-sumOut,y=+spendMonth.slice(0,4),m=+spendMonth.slice(5,7)-1;
   var h='<div class="bnav"><button type="button" data-act="bmon" data-id="-1" aria-label="Vorheriger Monat"'+(spendMonth<=BMIN?' disabled style="opacity:.3"':'')+'>‹</button><b>'+MONL[m]+' '+y+'</b><button type="button" data-act="bmon" data-id="1" aria-label="Nächster Monat">›</button></div>';
-  h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig im Monat')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>Ausgegeben '+eur(sumOut)+'</span><span>von '+eur(tot)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Budgets ändern</button></div></div>';
+  h+='<div class="bcard'+(left<0?' over':'')+'"><div class="lbl">'+(left<0?'Über Budget':'Noch übrig diesen Monat')+'</div><div class="big">'+eur(Math.abs(left))+'</div>'+bar(sumOut,tot).replace('background:var(--deep)','background:var(--on-deep)').replace('background:color-mix(in srgb,var(--ink) 12%,transparent)','background:rgba(255,255,255,.22)')+'<div class="bsub"><span>Ausgegeben '+eur(sumOut)+'</span><span>von '+eur(tot)+'</span></div><div class="acts"><button class="btn" style="color:var(--on-deep);border-color:var(--on-deep);padding:6px 14px" type="button" data-act="bset">Limits ändern</button></div></div>';
   h+='<div class="acts" style="margin:0 0 6px"><button class="btn primary" type="button" data-act="new">+ Eintrag</button></div>';
   h+='<h2>Bereiche</h2>';
   BC.forEach(function(c){
@@ -674,7 +674,7 @@ function saveSpend(id){
 }
 function openBudgetSet(){
   var safe=0;BI.forEach(function(i){safe+=i.min});
-  document.getElementById('sheet').innerHTML='<h3 id="shTitle">Monatsbudgets</h3><p class="note" style="margin:0 0 12px">Sicher eingeplant sind '+eur(safe)+' im Monat (Oma und Papa). Verteile das auf die Bereiche.</p>'
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">Limits</h3><p class="note" style="margin:0 0 12px">Sicher eingeplant sind '+eur(safe)+' im Monat (Oma und Papa). Verteile das auf die Bereiche.</p>'
    +BC.map(function(c){var fl=c.id==='flug';return '<div class="field"><label for="b-'+c.id+'">'+c.e+' '+c.n+(fl?' pro Jahr, ab Januar 2027':' pro Monat')+' (Euro)</label><input id="b-'+c.id+'" inputmode="decimal" value="'+String(fl?flugY():bCfg(c.id)).replace('.',',')+'"></div>'}).join('')
    +'<div class="acts"><button class="btn primary" type="button" data-act="bsave">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
   document.getElementById('scrim').classList.add('on');
@@ -798,7 +798,7 @@ function viewTrip(){
 }
 function render(){
   var hr=new Date().getHours(),gr=hr<11?'Guten Morgen ☀️':hr<18?'Hallo 🌸':'Guten Abend 🌙';document.getElementById('date').textContent=gr+', Klara · '+WDL[new Date().getDay()]+', '+new Date().getDate()+'. '+MONL[new Date().getMonth()];
-  var cur=curStay(),titles={budget:'Budget',wish:'Irgendwann',today:'Dein Tag',all:'Deine Projekte',ideas:'Unsortiert',trip:'Unterwegs',money:'Geld'};
+  var cur=curStay(),titles={budget:'Ausgaben',wish:'Irgendwann',today:'Dein Tag',all:'Deine Projekte',ideas:'Unsortiert',trip:'Unterwegs',money:'Geld'};
   document.getElementById('h1').textContent=titles[tab];
   document.getElementById('where').innerHTML=cur?cur.f+' <b>'+esc(cur.n)+'</b>, Tag '+(Math.min(diff(cur.s,TD)+1,Math.max(diff(cur.s,cur.e),1)))+' von '+Math.max(diff(cur.s,cur.e),1):'';
   var v={budget:viewBudget,wish:viewWish,today:viewToday,all:viewAll,ideas:viewIdeas,trip:viewTrip,money:viewMoney}[tab]();
@@ -967,7 +967,7 @@ document.addEventListener('click',function(e){
   else if(a==='new'){if(tab==='budget')openSpend('');else if(tab==='wish')openWish('');else openNew(id||'')}
   else if(a==='bmon'){var yy=+spendMonth.slice(0,4),mm=+spendMonth.slice(5,7)-1+(+id);yy+=Math.floor(mm/12);mm=((mm%12)+12)%12;var nm=yy+'-'+pad(mm+1);if(nm>=BMIN){spendMonth=nm;render()}}
   else if(a==='bset')openBudgetSet();
-  else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){var v=numIn(document.getElementById('b-'+c.id).value);if(c.id==='flug')cfg.flugY=v;else cfg[c.id]=v});put('cfg-budget',cfg);closeSheet();toast('Budgets gespeichert',1500)}
+  else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){var v=numIn(document.getElementById('b-'+c.id).value);if(c.id==='flug')cfg.flugY=v;else cfg[c.id]=v});put('cfg-budget',cfg);closeSheet();toast('Limits gespeichert',1500)}
   else if(a==='intoggle'){var ii=BI.filter(function(x){return x.id===id})[0],have=spends().filter(function(x){return x.t==='in'&&x.sc===id&&(x.date||'').slice(0,7)===spendMonth});
     if(have.length)have.forEach(function(x){remove(x.id)});else put('inc-'+id+'-'+spendMonth,mk({kind:'spend',cat:'inbox',src:'app',t:'in',sc:id,amount:ii.min,title:'',date:(TD.slice(0,7)===spendMonth?TD:spendMonth+'-01'),files:[]}))}
   else if(a==='inadd')openIncome(id);
