@@ -163,6 +163,14 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
 .compose input{flex:1;min-width:0;border:1px solid var(--ink);background:var(--surface);border-radius:999px;padding:11px 18px;font-size:16px;font-weight:300}
 .compose input:focus{border-color:var(--deep);outline:2px solid var(--deep);outline-offset:0}
 .compose button{flex:none;width:50px;border:0;background:var(--accent);color:#E7EDEF;border-radius:50%;font-weight:400;font-size:22px}
+.wchips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px}
+.wchips .mode{white-space:nowrap}
+.wadd{display:flex;gap:8px;margin-bottom:16px}.wadd input{flex:1;min-width:0}
+.wrow{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:4px 6px 4px 4px;margin-bottom:8px}
+.wrow .wt{flex:1;min-width:0;text-align:left;border:0;background:none;padding:10px 8px;font:500 15px/1.3 var(--font);color:var(--ink)}
+.wrow .wt small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrow.d .wt{text-decoration:line-through;color:var(--muted)}
+.wrow .wl{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;text-decoration:none;font-size:18px;background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);max-width:640px;margin:0 auto;padding:6px 10px 8px;background:var(--bg);pointer-events:auto}
 .tabs button{border:0;background:none;padding:6px 2px;font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-radius:18px;display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
 .tabs .ic{font-size:20px;line-height:1.3}
@@ -238,6 +246,7 @@ a{color:var(--ink);font-weight:500;text-underline-offset:3px}
   <nav class="tabs" id="tabs" role="tablist" aria-label="Ansichten">
     <button role="tab" type="button" data-tab="today" aria-selected="true"><span class="ic">🌤️</span>Heute</button>
     <button role="tab" type="button" data-tab="all" aria-selected="false"><span class="ic">🗂️</span>Projekte</button>
+    <button role="tab" type="button" data-tab="wish" aria-selected="false"><span class="ic">✨</span>Irgendwann</button>
     <button role="tab" type="button" data-tab="trip" aria-selected="false"><span class="ic">✈️</span>Reisen</button>
   </nav>
 </div>
@@ -438,7 +447,7 @@ function remove(id){
   if(store){var ref=store.collection('tasks').doc(id);chain[id]=(chain[id]||Promise.resolve()).then(function(){return ref.delete()}).catch(function(){toast('Löschen hat nicht geklappt.')})}
   else lsSave();
 }
-function list(){return Object.keys(items).map(function(id){var t=items[id];var o=Object.assign({id:id},t);if(o.cat==='geld')o.cat='privat';return o}).filter(function(t){return t.kind!=='idea'&&t.kind!=='date'})}
+function list(){return Object.keys(items).map(function(id){var t=items[id];var o=Object.assign({id:id},t);if(o.cat==='geld')o.cat='privat';return o}).filter(function(t){return t.kind!=='idea'&&t.kind!=='date'&&t.kind!=='wish'})}
 function mk(o){return Object.assign({title:'',cat:'inbox',kind:'task',due:'',repeat:'none',done:false,focus:false,note:'',link:'',amount:null,created:new Date().toISOString()},o)}
 function strip(t){var o=Object.assign({},t);delete o.id;return o}
 
@@ -530,6 +539,38 @@ function quickForm(){
    +'<div class="two"><div class="field"><label for="q-proj">Projekt</label><select id="q-proj">'+po+'</select></div><div class="field"><label for="q-when">Wann</label><input id="q-when" type="date" value="'+esc(qc.when)+'"></div></div>'
    +'<div class="segs"><button class="mode" type="button" data-act="qwhen" data-id="0">Heute</button><button class="mode" type="button" data-act="qwhen" data-id="1">Morgen</button><button class="mode" type="button" data-act="qwhen" data-id="7">In einer Woche</button></div>'
    +'<button class="btn primary" type="button" data-act="qcreate">Aufgabe anlegen</button></div>';
+}
+var WL=[{id:'shop',e:'🛍️',n:'Shopping',ph:'z. B. Sonnencreme'},{id:'stay',e:'🏨',n:'Unterkünfte',ph:'z. B. Finca in Andalusien'},{id:'place',e:'📍',n:'Orte',ph:'z. B. Lissabon'},{id:'insp',e:'✨',n:'Inspiration',ph:'Idee oder Link'}],wishSel='shop';
+function wishes(){return Object.keys(items).filter(function(id){return items[id].kind==='wish'}).map(function(id){return Object.assign({id:id},items[id])}).sort(function(a,b){return (b.created||'')<(a.created||'')?-1:1})}
+function viewWish(){
+  var cur=WL.filter(function(x){return x.id===wishSel})[0],all=wishes();
+  var h='<div class="wchips">'+WL.map(function(x){var n=all.filter(function(w){return w.wl===x.id&&!w.done}).length;return '<button class="mode" type="button" data-act="wsel" data-id="'+x.id+'" aria-pressed="'+(wishSel===x.id)+'">'+x.e+' '+x.n+(n?' · '+n:'')+'</button>'}).join('')+'</div>';
+  h+='<div class="wadd"><input id="w-quick" placeholder="'+cur.ph+'" autocomplete="off"><button class="btn primary" type="button" data-act="wquick">+</button></div>';
+  var mine=all.filter(function(w){return w.wl===wishSel}),open=mine.filter(function(w){return !w.done}),dn=mine.filter(function(w){return w.done});
+  function row(w){var u=safeUrl(w.link),sub=w.note?'<small>'+esc(w.note)+'</small>':'';
+    return '<div class="wrow'+(w.done?' d':'')+'">'+(wishSel==='shop'?'<button class="chk" type="button" data-act="wtoggle" data-id="'+w.id+'" aria-label="Abhaken"><i></i></button>':'')+'<button class="wt" type="button" data-act="wedit" data-id="'+w.id+'">'+esc(w.title)+sub+'</button>'+(u?'<a class="wl" href="'+esc(u)+'" target="_blank" rel="noopener" aria-label="Link öffnen">🔗</a>':'')+'</div>'}
+  h+=open.map(row).join('');
+  if(!open.length)h+='<div class="empty">Noch nichts hier. Sammle, was dir irgendwann gefallen könnte 🌸</div>';
+  if(dn.length)h+='<h2>Erledigt<small>'+dn.length+'</small></h2>'+dn.map(row).join('')+'<p class="note"><button class="btn" type="button" data-act="wclear">Erledigte entfernen</button></p>';
+  return h;
+}
+function openWish(id){
+  var w=id?items[id]:{title:'',wl:wishSel,link:'',note:''};if(!w)return;
+  var opts=WL.map(function(x){return '<option value="'+x.id+'"'+(w.wl===x.id?' selected':'')+'>'+x.e+' '+x.n+'</option>'}).join('');
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+(id?'Bearbeiten':'Neu')+'</h3>'
+   +'<div class="field"><label for="w-title">Was</label><input id="w-title" value="'+esc(w.title)+'" autocomplete="off"></div>'
+   +'<div class="field"><label for="w-list">Liste</label><select id="w-list">'+opts+'</select></div>'
+   +'<div class="field"><label for="w-link">Link</label><input id="w-link" type="url" inputmode="url" placeholder="https://…" value="'+esc(w.link||'')+'"></div>'
+   +'<div class="field"><label for="w-note">Notiz</label><textarea id="w-note" rows="3">'+esc(w.note||'')+'</textarea></div>'
+   +'<div class="acts"><button class="btn primary" type="button" data-act="wsave" data-id="'+(id||'')+'">Speichern</button><button class="btn" type="button" data-act="close">Abbrechen</button>'+(id?'<button class="btn danger" type="button" data-act="del" data-id="'+id+'">Löschen</button>':'')+'</div>';
+  document.getElementById('scrim').classList.add('on');
+  if(!id)setTimeout(function(){var i=document.getElementById('w-title');if(i)i.focus()},50);
+}
+function saveWish(id){
+  var t=document.getElementById('w-title').value.trim();if(!t){toast('Bitte gib einen Titel ein.');return}
+  var d={title:t,wl:document.getElementById('w-list').value,link:document.getElementById('w-link').value.trim(),note:document.getElementById('w-note').value.trim()};
+  var o=id&&items[id]?Object.assign({},items[id],d):mk(Object.assign({kind:'wish',cat:'inbox',src:'app'},d));
+  wishSel=d.wl;put(id||uid(),o);closeSheet();toast('Gespeichert',1500);
 }
 function viewIdeas(){
   var all=list().filter(function(t){return !t.done});
@@ -650,10 +691,10 @@ function viewTrip(){
 }
 function render(){
   var hr=new Date().getHours(),gr=hr<11?'Guten Morgen ☀️':hr<18?'Hallo 🌸':'Guten Abend 🌙';document.getElementById('date').textContent=gr+', Klara · '+WDL[new Date().getDay()]+', '+new Date().getDate()+'. '+MONL[new Date().getMonth()];
-  var cur=curStay(),titles={today:'Dein Tag',all:'Deine Projekte',ideas:'Unsortiert',trip:'Unterwegs',money:'Geld'};
+  var cur=curStay(),titles={wish:'Irgendwann',today:'Dein Tag',all:'Deine Projekte',ideas:'Unsortiert',trip:'Unterwegs',money:'Geld'};
   document.getElementById('h1').textContent=titles[tab];
   document.getElementById('where').innerHTML=cur?cur.f+' <b>'+esc(cur.n)+'</b>, Tag '+(Math.min(diff(cur.s,TD)+1,Math.max(diff(cur.s,cur.e),1)))+' von '+Math.max(diff(cur.s,cur.e),1):'';
-  var v={today:viewToday,all:viewAll,ideas:viewIdeas,trip:viewTrip,money:viewMoney}[tab]();
+  var v={wish:viewWish,today:viewToday,all:viewAll,ideas:viewIdeas,trip:viewTrip,money:viewMoney}[tab]();
   document.getElementById('view').innerHTML=v;
   var inb=list().filter(function(t){return t.cat==='inbox'&&!t.done}).length,b=document.getElementById('inboxCnt');
   if(b){b.hidden=!inb;b.textContent=inb}
@@ -816,7 +857,13 @@ document.addEventListener('click',function(e){
   else if(a==='promote'){var t=items[id];if(t){var n=Object.assign({},t);n.kind='task';put(id,n);toast('Jetzt als Aufgabe in „'+CAT[n.cat].n+'“')}}
   else if(a==='ai')sortWithClaude();
   else if(a==='save')saveSheet(id);
-  else if(a==='new')openNew(id||'');
+  else if(a==='new'){if(tab==='wish')openWish('');else openNew(id||'')}
+  else if(a==='wsel'){wishSel=id;render()}
+  else if(a==='wedit')openWish(id);
+  else if(a==='wsave')saveWish(id);
+  else if(a==='wtoggle'){var wt=items[id];if(wt){put(id,Object.assign({},wt,{done:!wt.done}))}}
+  else if(a==='wclear'){wishes().filter(function(w){return w.wl===wishSel&&w.done}).forEach(function(w){remove(w.id)})}
+  else if(a==='wquick'){var qi=document.getElementById('w-quick'),qv=qi&&qi.value.trim();if(qv){var q=mk({kind:'wish',cat:'inbox',wl:wishSel,src:'app',title:qv});if(/^https?:\/\//i.test(qv)){q.link=qv;q.title=qv.replace(/^https?:\/\/(www\.)?/i,'').split('/')[0]}put(uid(),q)}}
   else if(a==='stnew')openNew('reisen',{stay:stationSel,grp:el.dataset.g});
   else if(a==='sdup')document.getElementById('st-up').click();
   else if(a==='sdopen'){var s1=stayById(stationSel),f1=s1&&s1.docs&&s1.docs[+el.dataset.i];if(f1)store.storage.url(f1.path).then(function(u){window.open(u,'_blank')},function(){toast('Die Datei lässt sich gerade nicht öffnen.')})}
@@ -854,7 +901,7 @@ document.getElementById('view').addEventListener('input',function(e){if(e.target
 document.getElementById('view').addEventListener('change',function(e){
   if(e.target.id==='st-up'){if(e.target.files.length)uploadStayDocs(e.target.files);e.target.value='';return}if(e.target.id==='q-proj')qc.proj=e.target.value;if(e.target.id==='q-when')qc.when=e.target.value});
 document.getElementById('scrim').addEventListener('click',function(e){if(e.target===this)closeSheet()});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();if(e.key==='Enter'&&e.target.id==='w-quick'){e.preventDefault();var b=document.querySelector('[data-act=wquick]');if(b)b.click()}});
 /* ---------- Geld ---------- */
 var money={},moneyMonth=TD.slice(0,7),moneyAcct='all',LSM='klara-money-v1';
 function mput(id,d){money[id]=d;render();
