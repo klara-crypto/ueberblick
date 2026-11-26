@@ -762,6 +762,7 @@ function filesHTML(id,t){
   f.forEach(function(x,i){h+='<div class="file"><button class="fn" type="button" data-act="fopen" data-id="'+id+'" data-i="'+i+'">'+esc(x.name)+'</button><small>'+fmtSize(x.size)+'</small><button class="x" type="button" data-act="fdel" data-id="'+id+'" data-i="'+i+'" aria-label="Datei entfernen">×</button></div>'});
   h+='</div><input type="file" id="f-up" multiple hidden><button class="btn" type="button" data-act="fup">+ Datei hochladen</button></div>';
   var r=t.review;
+  if(t.cat!=='content'&&!r)return h;
   if(r==='pending')h+='<div class="rev"><b>👀 Bei Ina zur Kontrolle</b><p>Wartet auf Rückmeldung.</p><button class="btn" type="button" data-act="rvreset" data-id="'+id+'">Zurückholen</button></div>';
   else if(r==='redo')h+='<div class="rev"><b>↩ Ina bittet um Überarbeitung</b>'+(t.reviewNote?'<p>'+esc(t.reviewNote)+'</p>':'')+'<button class="btn" type="button" data-act="rvsend" data-id="'+id+'">Nochmal zur Kontrolle</button></div>';
   else if(r==='ok')h+='<div class="rev"><b>✓ Von Ina abgelegt</b>'+(t.reviewNote?'<p>'+esc(t.reviewNote)+'</p>':'')+'</div>';
