@@ -618,13 +618,18 @@ function viewBudget(){
     h+='<div class="wrow" style="display:block;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:500"><span>'+c.e+' '+c.n+'</span><span>'+eur(cap-u)+' übrig</span></div>'+bar(u,cap)+'<small style="color:var(--muted)">'+eur(u)+' von '+eur(cap)+'</small></div>'});
   h+='<h2>Einnahmen</h2>';
   BI.forEach(function(i){var r=0;ins.forEach(function(x){if(x.sc===i.id)r+=+x.amount||0});
-    h+='<div class="wrow" style="display:flex;justify-content:space-between;padding:12px 16px"><span>'+i.e+' '+i.n+'<br><small style="color:var(--muted)">'+(i.min===i.max?eur(i.min):eur(i.min)+' bis '+eur(i.max))+' erwartet</small></span><b>'+eur(r)+'</b></div>'});
+    h+='<div class="wrow" style="padding:6px 6px 6px 16px"><span style="flex:1">'+i.e+' '+i.n+'<br><small style="color:var(--muted)">'+(i.min===i.max?eur(i.min):eur(i.min)+' bis '+eur(i.max))+' erwartet</small></span><b style="padding-right:6px">'+eur(r)+'</b><button class="btn" type="button" style="padding:8px 14px" data-act="inadd" data-id="'+i.id+'" aria-label="Einnahme eintragen">+</button></div>'});
   h+='<p class="note">Sicher eingeplant: '+eur(safe)+' im Monat. Erhalten: '+eur(got)+'. Das Nebenprojekt zählt nicht in die Budgets, solange es schwankt.</p>';
   h+='<h2>Verlauf<small>'+mm.length+'</small></h2>';
   if(!mm.length)h+='<div class="empty">Noch nichts eingetragen. Tippe auf + Eintrag. Ein Screenshot geht auch.</div>';
   mm.forEach(function(x){var isIn=x.t==='in',lab=(isIn?BI:BC).filter(function(c){return c.id===x.sc})[0];
     h+='<div class="wrow"><button class="wt" type="button" data-act="spedit" data-id="'+x.id+'">'+esc(x.title||(lab?lab.n:'Eintrag'))+'<small>'+(lab?lab.e+' '+lab.n+' · ':'')+(x.date?fd(x.date):'')+(x.files&&x.files.length?' · 📎 '+x.files.length:'')+(x.note?' · '+esc(x.note):'')+'</small></button><b style="padding:0 12px;white-space:nowrap;color:'+(isIn?'var(--deep)':'inherit')+'">'+(isIn?'+':'')+eur(+x.amount||0)+'</b></div>'});
   return h;
+}
+function openIncome(sc){
+  var i=BI.filter(function(x){return x.id===sc})[0];
+  document.getElementById('sheet').innerHTML='<h3 id="shTitle">'+i.e+' '+i.n+'</h3><div class="field"><label for="in-amt">Betrag in Euro</label><input id="in-amt" inputmode="decimal" placeholder="0,00" autocomplete="off"></div><div class="acts"><button class="btn primary" type="button" data-act="insave" data-id="'+sc+'">Eintragen</button><button class="btn" type="button" data-act="close">Abbrechen</button></div>';
+  document.getElementById('scrim').classList.add('on');setTimeout(function(){var e=document.getElementById('in-amt');if(e)e.focus()},50);
 }
 function numIn(v){var n=parseFloat(String(v).replace(/\./g,'').replace(',','.'));return isNaN(n)?0:n}
 function spOpts(t,sel){var l=t==='in'?BI:BC;return l.map(function(c){return '<option value="'+c.id+'"'+(sel===c.id?' selected':'')+'>'+c.e+' '+c.n+'</option>'}).join('')}
@@ -953,6 +958,8 @@ document.addEventListener('click',function(e){
   else if(a==='bmon'){var yy=+spendMonth.slice(0,4),mm=+spendMonth.slice(5,7)-1+(+id);yy+=Math.floor(mm/12);mm=((mm%12)+12)%12;var nm=yy+'-'+pad(mm+1);if(nm>=BMIN){spendMonth=nm;render()}}
   else if(a==='bset')openBudgetSet();
   else if(a==='bsave'){var cfg=mk({kind:'cfg',cat:'inbox',title:'Budget'});BC.forEach(function(c){cfg[c.id]=numIn(document.getElementById('b-'+c.id).value)});put('cfg-budget',cfg);closeSheet();toast('Budgets gespeichert',1500)}
+  else if(a==='inadd')openIncome(id);
+  else if(a==='insave'){var iv=numIn(document.getElementById('in-amt').value);if(!iv){toast('Bitte gib einen Betrag ein.');return}put(uid(),mk({kind:'spend',cat:'inbox',src:'app',t:'in',sc:id,amount:iv,title:'',date:(TD.slice(0,7)===spendMonth?TD:spendMonth+'-01'),files:[]}));closeSheet();toast('Eingetragen',1500)}
   else if(a==='sptype'){document.getElementById('s-type').value=id;document.querySelectorAll('[data-act=sptype]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.id===id?'true':'false')});document.getElementById('s-sc').innerHTML=spOpts(id,id==='in'?'mcp':'food')}
   else if(a==='spedit')openSpend(id);
   else if(a==='spsave')saveSpend(id);
@@ -1004,7 +1011,7 @@ document.getElementById('view').addEventListener('change',function(e){
 document.getElementById('scrim').addEventListener('click',function(e){if(e.target===this)closeSheet()});
 document.addEventListener('change',function(e){if(e.target.id==='s-file'){var p=document.getElementById('s-picked');if(p)p.textContent=e.target.files.length?'✓ '+e.target.files.length+' Datei(en) ausgewählt':''}});
 document.addEventListener('paste',function(e){if(e.target.id!=='w-quick')return;var t=(e.clipboardData||window.clipboardData).getData('text');if(/\r?\n/.test(t.trim())){e.preventDefault();addWishText(t)}});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();if(e.key==='Enter'&&e.target.id==='w-quick'){e.preventDefault();var b=document.querySelector('[data-act=wquick]');if(b)b.click()}});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='in-amt'){e.preventDefault();var ib=document.querySelector('[data-act=insave]');if(ib)ib.click();return}if(e.key==='Escape')closeSheet();if(e.key==='Enter'&&e.target.id==='w-quick'){e.preventDefault();var b=document.querySelector('[data-act=wquick]');if(b)b.click()}});
 /* ---------- Geld ---------- */
 var money={},moneyMonth=TD.slice(0,7),moneyAcct='all',LSM='klara-money-v1';
 function mput(id,d){money[id]=d;render();
